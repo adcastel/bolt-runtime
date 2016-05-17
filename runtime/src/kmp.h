@@ -2436,6 +2436,10 @@ typedef struct KMP_ALIGN_CACHE kmp_base_info {
     kmp_mutex_align_t th_suspend_mx;
     int               th_suspend_init_count;
 #endif
+#if KMP_USE_ARGOBOTS
+    ABT_eventual      th_bar_go;
+    ABT_eventual      th_bar_arrived;
+#endif
 
 #if USE_ITT_BUILD
     kmp_itt_mark_t        th_itt_mark_single;
@@ -3342,6 +3346,12 @@ extern kmp_uint64 __kmp_hardware_timestamp(void);
 
 #if KMP_OS_UNIX
 extern int  __kmp_read_from_file( char const *path, char const *format, ... );
+#endif
+
+#if KMP_USE_ARGOBOTS && KMP_DEBUG
+extern void __kmp_abt_print_thread( kmp_info_t *th, const char *msg );
+#else
+#define __kmp_abt_print_thread(th,msg)
 #endif
 
 /* ------------------------------------------------------------------------ */

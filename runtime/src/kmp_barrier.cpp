@@ -72,8 +72,12 @@ __kmp_linear_barrier_gather(enum barrier_type bt, kmp_info_t *this_thr, int gtid
         // Mark arrival to master thread
         /* After performing this write, a worker thread may not assume that the team is valid
            any more - it could be deallocated by the master thread at any time. */
+#if KMP_USE_ARGOBOTS
+        ABT_eventual_set(this_thr->th.th_bar_arrived, NULL, 0);
+#else
         kmp_flag_64 flag(&thr_bar->b_arrived, other_threads[0]);
         flag.release();
+#endif
     } else {
         register kmp_balign_team_t *team_bar = &team->t.t_bar[bt];
         register int nproc = this_thr->th.th_team_nproc;
@@ -94,9 +98,14 @@ __kmp_linear_barrier_gather(enum barrier_type bt, kmp_info_t *this_thr, int gtid
                             &other_threads[i]->th.th_bar[bt].bb.b_arrived, new_state));
 
             // Wait for worker thread to arrive
+#if KMP_USE_ARGOBOTS
+            ABT_eventual_wait(other_threads[i]->th.th_bar_arrived, NULL);
+            ABT_eventual_reset(other_threads[i]->th.th_bar_arrived);
+#else
             kmp_flag_64 flag(&other_threads[i]->th.th_bar[bt].bb.b_arrived, new_state);
             flag.wait(this_thr, FALSE
                       USE_ITT_BUILD_ARG(itt_sync_obj) );
+#endif
 #if USE_ITT_BUILD && USE_ITT_NOTIFY
             // Barrier imbalance - write min of the thread time and the other thread time to the thread.
             if (__kmp_forkjoin_frames_mode == 2) {
@@ -170,16 +179,24 @@ __kmp_linear_barrier_release(enum barrier_type bt, kmp_info_t *this_thr, int gti
                               &other_threads[i]->th.th_bar[bt].bb.b_go,
                               other_threads[i]->th.th_bar[bt].bb.b_go,
                               other_threads[i]->th.th_bar[bt].bb.b_go + KMP_BARRIER_STATE_BUMP));
+#if KMP_USE_ARGOBOTS
+                ABT_eventual_set(other_threads[i]->th.th_bar_go, NULL, 0);
+#else
                 kmp_flag_64 flag(&other_threads[i]->th.th_bar[bt].bb.b_go, other_threads[i]);
                 flag.release();
+#endif
             }
         }
     } else { // Wait for the MASTER thread to release us
         KA_TRACE(20, ("__kmp_linear_barrier_release: T#%d wait go(%p) == %u\n",
                       gtid, &thr_bar->b_go, KMP_BARRIER_STATE_BUMP));
+#if KMP_USE_ARGOBOTS
+        ABT_eventual_wait(this_thr->th.th_bar_go, NULL);
+#else
         kmp_flag_64 flag(&thr_bar->b_go, KMP_BARRIER_STATE_BUMP);
         flag.wait(this_thr, TRUE
                   USE_ITT_BUILD_ARG(itt_sync_obj) );
+#endif
 #if USE_ITT_BUILD && USE_ITT_NOTIFY
         if ((__itt_sync_create_ptr && itt_sync_obj == NULL) || KMP_ITT_DEBUG) {
             // In a fork barrier; cannot get the object reliably (or ITTNOTIFY is disabled)
@@ -208,6 +225,9 @@ __kmp_linear_barrier_release(enum barrier_type bt, kmp_info_t *this_thr, int gti
         TCW_4(thr_bar->b_go, KMP_INIT_BARRIER_STATE);
         KA_TRACE(20, ("__kmp_linear_barrier_release: T#%d(%d:%d) set go(%p) = %u\n",
                       gtid, team->t.t_id, tid, &thr_bar->b_go, KMP_INIT_BARRIER_STATE));
+#if KMP_USE_ARGOBOTS
+        ABT_eventual_reset(this_thr->th.th_bar_go);
+#endif
         KMP_MB();  // Flush all pending memory write invalidates.
     }
     KA_TRACE(20, ("__kmp_linear_barrier_release: T#%d(%d:%d) exit for barrier type %d\n",
