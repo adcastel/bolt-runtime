@@ -3,7 +3,7 @@
  * kmp.h -- KPTS runtime header file.
  */
 
-
+//HOLA
 //===----------------------------------------------------------------------===//
 //
 //                     The LLVM Compiler Infrastructure
