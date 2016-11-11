@@ -48,6 +48,9 @@ endif()
 if(${LIBOMP_USE_ARGOBOTS})
   include_directories(${LIBOMP_ARGOBOTS_INSTALL_DIR}/include)
 endif()
+if(${LIBOMP_USE_GLT})
+  include_directories(${LIBOMP_GLT_INSTALL_DIR})
+endif()
 
 # Getting correct source files to build library
 set(LIBOMP_CFILES)
@@ -84,6 +87,11 @@ else()
   elseif(${LIBOMP_USE_ARGOBOTS})
     # Unix specific files
     libomp_append(LIBOMP_CFILES z_Linux_abt_util.c)
+    libomp_append(LIBOMP_CFILES kmp_gsupport.c)
+    libomp_append(LIBOMP_ASMFILES z_Linux_asm.s) # Unix assembly file
+  elseif(${LIBOMP_USE_GLT})
+    # Unix specific files
+    libomp_append(LIBOMP_CFILES z_Linux_glt_util.c)
     libomp_append(LIBOMP_CFILES kmp_gsupport.c)
     libomp_append(LIBOMP_ASMFILES z_Linux_asm.s) # Unix assembly file
   else()
@@ -152,6 +160,44 @@ if(LIBOMP_USE_ARGOBOTS_NEW)
 libomp_append(LIBOMP_CFILES abt/kmp_abt_ftn_cdecl.c)
 libomp_append(LIBOMP_CFILES abt/kmp_abt_ftn_extra.c)
 libomp_append(LIBOMP_CFILES abt/kmp_abt_version.c)
+endif()
+
+# If we use a new GLT implementation, we ignore existing files.
+if(LIBOMP_USE_GLT_NEW)
+  include_directories(${LIBOMP_SRC_DIR}/glt)
+  set(LIBOMP_CFILES
+      glt/kmp_glt_alloc.c
+      glt/kmp_glt_atomic.c
+      glt/kmp_glt_csupport.c
+      glt/kmp_glt_debug.c
+      glt/kmp_glt_environment.c
+      glt/kmp_glt_error.c
+      glt/kmp_glt_global.c
+      glt/kmp_glt_i18n.c
+      glt/kmp_glt_io.c
+      glt/kmp_glt_util_Linux.c
+      glt/kmp_glt_runtime.c
+      glt/kmp_glt_settings.c
+      glt/kmp_glt_str.c
+      glt/kmp_glt_tasking.c
+      glt/kmp_glt_taskq.c
+      glt/kmp_glt_threadprivate.c
+      glt/kmp_glt_utility.c
+  )
+  set(LIBOMP_CXXFILES
+      glt/kmp_glt_dispatch.cpp
+      glt/kmp_glt_sched.cpp)
+  set(LIBOMP_ASMFILES
+      z_Linux_asm.s)
+  if(${LIBOMP_OMP_VERSION} GREATER 40 OR ${LIBOMP_OMP_VERSION} EQUAL 40)
+    libomp_append(LIBOMP_CXXFILES glt/kmp_glt_taskdeps.cpp)
+    libomp_append(LIBOMP_CXXFILES glt/kmp_glt_cancel.cpp)
+  endif()
+
+# Files common to stubs and normal library
+libomp_append(LIBOMP_CFILES glt/kmp_glt_ftn_cdecl.c)
+libomp_append(LIBOMP_CFILES glt/kmp_glt_ftn_extra.c)
+libomp_append(LIBOMP_CFILES glt/kmp_glt_version.c)
 endif()
 
 set(LIBOMP_SOURCE_FILES ${LIBOMP_CFILES} ${LIBOMP_CXXFILES} ${LIBOMP_ASMFILES})

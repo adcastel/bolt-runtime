@@ -512,6 +512,8 @@ typedef int PACKED_REDUCTION_METHOD_T;
 #if KMP_OS_UNIX
 #if KMP_USE_ARGOBOTS
 # include <abt.h>
+#elif KMP_USE_GLT
+#include <glt.h>
 #else
 # include <pthread.h>
 #endif

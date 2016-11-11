@@ -157,6 +157,13 @@ set(LIBOMP_USE_ARGOBOTS_NEW FALSE CACHE BOOL
 set(LIBOMP_ARGOBOTS_INSTALL_DIR /usr/local CACHE PATH
   "Install path for Argobots")
 
+# GLT-support
+set(LIBOMP_USE_GLT FALSE CACHE BOOL
+  "Use GLT as threading model?")
+set(LIBOMP_USE_GLT_NEW FALSE CACHE BOOL
+  "Use GLT as threading model?")
+set(LIBOMP_GLT_INSTALL_DIR /usr/local CACHE PATH  "Install path for GLT")
+
 # Get the build number from kmp_version.c
 libomp_get_build_number("${CMAKE_CURRENT_SOURCE_DIR}" LIBOMP_VERSION_BUILD)
 math(EXPR LIBOMP_VERSION_BUILD_YEAR "${LIBOMP_VERSION_BUILD}/10000")
@@ -325,6 +332,11 @@ if(LIBOMP_USE_ARGOBOTS AND (NOT LIBOMP_HAVE_ARGOBOTS))
   libomp_error_say("Argobots requested but not available")
 endif()
 
+# Error check GLT support after config-ix has run
+if(LIBOMP_USE_GLT AND (NOT LIBOMP_HAVE_GLT))
+  libomp_error_say("GLT requested but not available")
+endif()
+
 # Setting final library name
 set(LIBOMP_DEFAULT_LIB_NAME libomp)
 if(${PROFILE_LIBRARY})
@@ -378,6 +390,8 @@ if(${LIBOMP_STANDALONE_BUILD})
   libomp_say("Use Hwloc library    -- ${LIBOMP_USE_HWLOC}")
   libomp_say("Use Argobots         -- ${LIBOMP_USE_ARGOBOTS}")
   libomp_say("Use Argobots (new)   -- ${LIBOMP_USE_ARGOBOTS_NEW}")
+  libomp_say("Use GLT         	   -- ${LIBOMP_USE_GLT}")
+  libomp_say("Use GLT      (new)   -- ${LIBOMP_USE_GLT_NEW}")
 endif()
 
 add_subdirectory(src)
