@@ -414,8 +414,9 @@ xexpand(FTN_GET_THREAD_NUM)( void )
         //int rank;
         //ABT_xstream_self_rank(&rank);
         //return rank;
-        int gtid = __kmp_gtid_get_specific();
-        return __kmp_tid_from_gtid( gtid );
+        return glt_get_thread_num();
+        //int gtid = __kmp_gtid_get_specific();
+        //return __kmp_tid_from_gtid( gtid );
     #endif
 }
 

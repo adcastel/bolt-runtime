@@ -13,8 +13,8 @@
 //===----------------------------------------------------------------------===//
 
 
-#ifndef KMP_ABT_IO_H
-#define KMP_ABT_IO_H
+#ifndef KMP_GLT_IO_H
+#define KMP_GLT_IO_H
 
 #ifdef __cplusplus
 extern "C" {

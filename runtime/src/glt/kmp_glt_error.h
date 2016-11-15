@@ -13,8 +13,8 @@
 //===----------------------------------------------------------------------===//
 
 
-#ifndef KMP_ABT_ERROR_H
-#define KMP_ABT_ERROR_H
+#ifndef KMP_GLT_ERROR_H
+#define KMP_GLT_ERROR_H
 
 #include "kmp_glt_i18n.h"
 
@@ -53,5 +53,5 @@ void __kmp_check_barrier( int gtid, enum cons_type ct, ident_t const * ident );
     } // extern "C"
 #endif
 
-#endif // KMP_ABT_ERROR_H
+#endif // KMP_GLT_ERROR_H
 

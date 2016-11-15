@@ -13,8 +13,8 @@
 //===----------------------------------------------------------------------===//
 
 
-#ifndef KMP_ABT_DEBUG_H
-#define KMP_ABT_DEBUG_H
+#ifndef KMP_GLT_DEBUG_H
+#define KMP_GLT_DEBUG_H
 
 #include <stdarg.h>
 

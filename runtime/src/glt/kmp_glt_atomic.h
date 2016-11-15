@@ -13,8 +13,8 @@
 //===----------------------------------------------------------------------===//
 
 
-#ifndef KMP_ABT_ATOMIC_H
-#define KMP_ABT_ATOMIC_H
+#ifndef KMP_GLT_ATOMIC_H
+#define KMP_GLT_ATOMIC_H
 
 #include "kmp_glt.h"
 #include "kmp_glt_os.h"
@@ -838,6 +838,6 @@ CPLX128_LEG 	__kmpc_atomic_cmplx16_swp( ident_t *id_ref, int gtid, CPLX128_LEG *
     } // extern "C"
 #endif
 
-#endif /* KMP_ATOMIC_H */
+#endif /* KMP_GLT_ATOMIC_H */
 
 // end of file

@@ -14,8 +14,8 @@
 //===----------------------------------------------------------------------===//
 
 
-#ifndef KMP_ABT_WRAPPER_MALLOC_H
-#define KMP_ABT_WRAPPER_MALLOC_H
+#ifndef KMP_GLT_WRAPPER_MALLOC_H
+#define KMP_GLT_WRAPPER_MALLOC_H
 
 /*
     This header serves for 3 purposes:
@@ -200,6 +200,6 @@
 
 #endif // KMP_DEBUG
 
-#endif // KMP_ABT_WRAPPER_MALLOC_H
+#endif // KMP_GLT_WRAPPER_MALLOC_H
 
 // end of file //

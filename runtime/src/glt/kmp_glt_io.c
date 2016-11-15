@@ -1,5 +1,5 @@
 /*
- * KMP_ABT_IO.c -- RTL IO
+ * KMP_GLT_IO.c -- RTL IO
  */
 
 

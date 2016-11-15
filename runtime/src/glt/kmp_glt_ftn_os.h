@@ -13,8 +13,8 @@
 //===----------------------------------------------------------------------===//
 
 
-#ifndef KMP_ABT_FTN_OS_H
-#define KMP_ABT_FTN_OS_H
+#ifndef KMP_GLT_FTN_OS_H
+#define KMP_GLT_FTN_OS_H
 
 // KMP_FNT_ENTRIES may be one of: KMP_FTN_PLAIN, KMP_FTN_UPPER, KMP_FTN_APPEND, KMP_FTN_UAPPEND.
 
@@ -570,5 +570,5 @@
 
 #endif // KMP_USE_VERSION_SYMBOLS
 
-#endif /* KMP_ABT_FTN_OS_H */
+#endif /* KMP_GLT_FTN_OS_H */
 

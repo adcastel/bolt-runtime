@@ -9,8 +9,8 @@
 //===----------------------------------------------------------------------===//
 
 
-#ifndef KMP_ABT_SAFE_C_API_H
-#define KMP_ABT_SAFE_C_API_H
+#ifndef KMP_GLT_SAFE_C_API_H
+#define KMP_GLT_SAFE_C_API_H
 
 //
 // Replacement for banned C API
@@ -59,4 +59,4 @@
 
 #endif // KMP_OS_WINDOWS
 
-#endif // KMP_ABT_SAFE_C_API_H
+#endif // KMP_GLT_SAFE_C_API_H

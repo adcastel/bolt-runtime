@@ -13,8 +13,8 @@
 //===----------------------------------------------------------------------===//
 
 
-#ifndef KMP_ABT_VERSION_H
-#define KMP_ABT_VERSION_H
+#ifndef KMP_GLT_VERSION_H
+#define KMP_GLT_VERSION_H
 
 #ifdef __cplusplus
     extern "C" {
@@ -65,4 +65,4 @@ void __kmp_print_version_2( void );
     } // extern "C"
 #endif // __cplusplus
 
-#endif /* KMP_ABT_VERSION_H */
+#endif /* KMP_GLT_VERSION_H */

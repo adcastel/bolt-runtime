@@ -13,8 +13,8 @@
 //===----------------------------------------------------------------------===//
 
 
-#ifndef KMP_ABT_WRAPPER_GETPID_H
-#define KMP_ABT_WRAPPER_GETPID_H
+#ifndef KMP_GLT_WRAPPER_GETPID_H
+#define KMP_GLT_WRAPPER_GETPID_H
 
 #if KMP_OS_UNIX
 
@@ -51,6 +51,6 @@
 
 */
 
-#endif // KMP_ABT_WRAPPER_GETPID_H
+#endif // KMP_GLT_WRAPPER_GETPID_H
 
 // end of file //

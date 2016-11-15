@@ -13,8 +13,8 @@
 //===----------------------------------------------------------------------===//
 
 
-#ifndef KMP_ABT_SETTINGS_H
-#define KMP_ABT_SETTINGS_H
+#ifndef KMP_GLT_SETTINGS_H
+#define KMP_GLT_SETTINGS_H
 
 void __kmp_reset_global_vars( void );
 void __kmp_env_initialize( char const * );
@@ -44,7 +44,7 @@ int __kmp_default_tp_capacity( int, int, int);
 #define KMP_STR_BUF_PRINT_STR           __kmp_str_buf_print( buffer, "  %s %s='%s'\n", KMP_I18N_STR(Host), name, value )
 #endif
 
-#endif // KMP_ABT_SETTINGS_H
+#endif // KMP_GLT_SETTINGS_H
 
 // end of file //
 

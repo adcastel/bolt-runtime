@@ -1,5 +1,5 @@
-#ifndef KMP_ABT_STATS_H
-#define KMP_ABT_STATS_H
+#ifndef KMP_GLT_STATS_H
+#define KMP_GLT_STATS_H
 
 /** @file kmp_abt_stats.h
  * Functions for collecting statistics.
@@ -745,4 +745,4 @@ extern kmp_stats_output_module __kmp_stats_output;
 #define KMP_STOP_DEVELOPER_EXPLICIT_TIMER(n)    ((void)0)
 #endif  // KMP_STATS_ENABLED
 
-#endif // KMP_ABT_STATS_H
+#endif // KMP_GLT_STATS_H

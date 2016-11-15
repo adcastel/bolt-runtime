@@ -13,8 +13,8 @@
 //===----------------------------------------------------------------------===//
 
 
-#ifndef KMP_ABT_I18N_H
-#define KMP_ABT_I18N_H
+#ifndef KMP_GLT_I18N_H
+#define KMP_GLT_I18N_H
 
 #include "kmp_glt_str.h"
 
@@ -188,6 +188,6 @@ void    __kmp_msg( kmp_msg_severity_t severity, kmp_msg_t message, ... );
     } // extern "C"
 #endif // __cplusplus
 
-#endif // KMP_ABT_I18N_H
+#endif // KMP_GLT_I18N_H
 
 // end of file //

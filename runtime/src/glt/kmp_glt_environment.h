@@ -13,8 +13,8 @@
 //===----------------------------------------------------------------------===//
 
 
-#ifndef KMP_ABT_ENVIRONMENT_H
-#define KMP_ABT_ENVIRONMENT_H
+#ifndef KMP_GLT_ENVIRONMENT_H
+#define KMP_GLT_ENVIRONMENT_H
 
 #ifdef __cplusplus
 extern "C" {
@@ -75,7 +75,7 @@ char const * __kmp_env_blk_var(  kmp_env_blk_t * block, char const * name );
 }
 #endif
 
-#endif // KMP_ABT_ENVIRONMENT_H
+#endif // KMP_GLT_ENVIRONMENT_H
 
 // end of file //
 

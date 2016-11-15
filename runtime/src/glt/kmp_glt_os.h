@@ -13,8 +13,8 @@
 //===----------------------------------------------------------------------===//
 
 
-#ifndef KMP_ABT_OS_H
-#define KMP_ABT_OS_H
+#ifndef KMP_GLT_OS_H
+#define KMP_GLT_OS_H
 
 #include "kmp_config.h"
 #include <stdlib.h>
@@ -555,5 +555,5 @@ enum kmp_warnings_level {
 } // extern "C"
 #endif // __cplusplus
 
-#endif /* KMP_ABT_OS_H */
+#endif /* KMP_GLT_OS_H */
 

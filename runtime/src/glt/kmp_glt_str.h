@@ -13,8 +13,8 @@
 //===----------------------------------------------------------------------===//
 
 
-#ifndef KMP_ABT_STR_H
-#define KMP_ABT_STR_H
+#ifndef KMP_GLT_STR_H
+#define KMP_GLT_STR_H
 
 #include <string.h>
 #include <stdarg.h>
@@ -113,7 +113,7 @@ void __kmp_str_to_uint( char const * str, kmp_uint64 * out, char const * * error
     } // extern "C"
 #endif // __cplusplus
 
-#endif // KMP_STR_H
+#endif // KMP_GLT_STR_H
 
 // end of file //
 
