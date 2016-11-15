@@ -64,13 +64,35 @@ volatile kmp_uint32 __kmp_task_counter  = 0;
 void
 __kmp_global_initialize(void)
 {
-    int i;
     int status;
-
+    int i;
     /* Initialize Argobots before other initializations. */
-    status = ABT_init(0, NULL);
-    KMP_CHECK_SYSFAIL( "ABT_init", status );
+    //status = ABT_init(0, NULL);
+    //KMP_CHECK_SYSFAIL( "ABT_init", status );
+    
+  /*  char *env;
+    char buff[10];
 
+    int nthreads;
+    int i, k;
+
+    // Is __kmp_global.xproc a reasonable value for the number of ESs? 
+    env = getenv("KMP_GLT_NUM_THREADS");
+    if (env) {
+        nthreads = atoi(env);
+    if (nthreads < __kmp_global.xproc) __kmp_global.xproc = nthreads;
+    } else {
+        nthreads = __kmp_global.xproc;
+    }
+    
+    KA_TRACE( 1000, ("__kmp_global_initialize: # of GLT_threads = %d\n", nthreads ) );
+    printf("__kmp_global_initialize: # of GLT_threads = %d\n", nthreads );
+
+    sprintf(buff, "%d", nthreads);
+    setenv("GLT_NUM_THREADS", buff, 1);
+    
+    glt_init(0,NULL);
+*/
     __kmp_global.g = { 0 };
 
     /* --------------------------------------------------------------------------- */
@@ -127,12 +149,21 @@ __kmp_global_initialize(void)
     __kmp_global.threadpriv_cache_list = NULL;
 
     /* Global Locks */
+/*
     ABT_mutex_create(&__kmp_global.stdio_lock);
     ABT_mutex_create(&__kmp_global.cat_lock);
     ABT_mutex_create(&__kmp_global.initz_lock);
     ABT_mutex_create(&__kmp_global.task_team_lock);
     for (i = 0; i < KMP_NUM_CRIT_LOCKS; i++) {
         ABT_mutex_create(&__kmp_global.crit_lock[i]);
+    }
+*/
+    glt_mutex_create(&__kmp_global.stdio_lock);
+    glt_mutex_create(&__kmp_global.cat_lock);
+    glt_mutex_create(&__kmp_global.initz_lock);
+    glt_mutex_create(&__kmp_global.task_team_lock);
+    for (i = 0; i < KMP_NUM_CRIT_LOCKS; i++) {
+        glt_mutex_create(&__kmp_global.crit_lock[i]);
     }
 
     __kmp_global.library = library_none;
@@ -245,6 +276,7 @@ __kmp_global_destroy(void)
 {
     int i;
 
+    /*
     ABT_mutex_free(&__kmp_global.stdio_lock);
     ABT_mutex_free(&__kmp_global.cat_lock);
     ABT_mutex_free(&__kmp_global.initz_lock);
@@ -254,6 +286,16 @@ __kmp_global_destroy(void)
     }
 
     ABT_finalize();
+    */
+    glt_mutex_free(&__kmp_global.stdio_lock);
+    glt_mutex_free(&__kmp_global.cat_lock);
+    glt_mutex_free(&__kmp_global.initz_lock);
+    glt_mutex_free(&__kmp_global.task_team_lock);
+    for (i = 0; i < KMP_NUM_CRIT_LOCKS; i++) {
+        glt_mutex_free(&__kmp_global.crit_lock[i]);
+    }
+
+    glt_finalize();
     __kmp_init_global = FALSE;
 }
 

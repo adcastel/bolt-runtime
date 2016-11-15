@@ -281,7 +281,7 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
     va_list     ap;
     va_start(   ap, microtask );
 
-#ifdef KMP_ABT_USE_TASKLET_TEAM
+#ifdef KMP_GLT_USE_TASKLET_TEAM
     kmp_info_t *this_thr = __kmp_global.threads[ gtid ];
     if (get__tasklet(this_thr)) {
         set__tasklet(this_thr,FTN_FALSE);
@@ -319,7 +319,7 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 
     __kmp_join_call( loc, gtid
     );
-#ifdef KMP_ABT_USE_TASKLET_TEAM
+#ifdef KMP_GLT_USE_TASKLET_TEAM
     }
 #endif
 
@@ -1335,7 +1335,7 @@ __kmpc_test_lock( ident_t *loc, kmp_int32 gtid, void **user_lock )
     int rc;
     kmp_lock_t lck = *(kmp_lock_t *)user_lock;
     rc = __kmp_test_lock( &lck, gtid );
-    return ( rc == ABT_SUCCESS ? FTN_TRUE : FTN_FALSE );
+    return ( rc == GLT_SUCCESS ? FTN_TRUE : FTN_FALSE );
 }
 
 /* try to acquire the lock */
@@ -1345,7 +1345,7 @@ __kmpc_test_nest_lock( ident_t *loc, kmp_int32 gtid, void **user_lock )
     int rc;
     kmp_lock_t lck = *(kmp_lock_t *)user_lock;
     rc = __kmp_test_lock( &lck, gtid );
-    return ( rc == ABT_SUCCESS ? FTN_TRUE : FTN_FALSE );
+    return ( rc == GLT_SUCCESS ? FTN_TRUE : FTN_FALSE );
 }
 
 

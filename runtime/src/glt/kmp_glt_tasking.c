@@ -1328,7 +1328,7 @@ __kmpc_omp_taskyield( ident_t *loc_ref, kmp_int32 gtid, int end_part )
     taskdata = thread->th.th_current_task;
 
     /* Let others, e.g., tasks, can use this kmp_info */
-    __kmp_release_info(thread);
+    //__kmp_release_info(thread);
 
     //[AC] In a taskyield directive we just do it... yield
     __kmp_yield(1);

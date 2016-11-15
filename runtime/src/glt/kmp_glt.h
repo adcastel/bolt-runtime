@@ -14,8 +14,8 @@
 //===----------------------------------------------------------------------===//
 
 
-#ifndef KMP_ABT_H
-#define KMP_ABT_H
+#ifndef KMP_GLT_H
+#define KMP_GLT_H
 
 #include "kmp_config.h"
 
@@ -64,7 +64,7 @@
 #define KMP_ABT_USE_SELF_INFO
 #elif KMP_USE_GLT
 #define KMP_GLT_USE_TASKLET_TEAM
-#define KMP_GLT_USE_SELF_INFO
+//#define KMP_GLT_USE_SELF_INFO
 #endif
 
 #include <stdio.h>
@@ -3405,11 +3405,13 @@ KMP_EXPORT void KMPC_CONVENTION kmpc_set_stacksize_s(size_t);
 KMP_EXPORT void KMPC_CONVENTION kmpc_set_library(int);
 KMP_EXPORT void KMPC_CONVENTION kmpc_set_defaults(char const *);
 
+
+
 #include "kmp_glt_inline.h"
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* KMP_ABT_H */
+#endif /* KMP_GLT_H */
 

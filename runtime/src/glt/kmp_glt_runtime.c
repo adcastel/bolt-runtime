@@ -1503,7 +1503,7 @@ __kmp_register_root( int initial_thread )
     TCW_4(root_thread->th.th_active, TRUE);
 
     /* prepare the master thread for get_gtid() */
-    //__kmp_gtid_set_specific( gtid );
+    __kmp_gtid_set_specific( gtid );
     root_thread->th.th_info.ds.ds_gtid = gtid;
 
     __kmp_create_uber( gtid, root_thread, __kmp_global.stksize );
@@ -1653,7 +1653,7 @@ __kmp_unregister_root_current_thread( int gtid )
 
     /* free up this thread slot */
     //__kmp_gtid_set_specific( KMP_GTID_DNE );
-    __kmp_set_self_info( NULL );
+    //__kmp_set_self_info( NULL );
 
     KMP_MB();
     KC_TRACE( 10, ("__kmp_unregister_root_current_thread: T#%d unregistered\n", gtid ));
@@ -3328,7 +3328,8 @@ __kmp_join_call(ident_t *loc, int gtid
 #endif /* OMP_40_ENABLED */
 
     KMP_MB();
-
+KA_TRACE( 20, ("__kmp_join_call: after __kmp_internal_join: T#%d\n",
+                      gtid) );
 #if OMP_40_ENABLED
     if ( master_th->th.th_teams_microtask &&
          !exit_teams &&
@@ -3364,7 +3365,8 @@ __kmp_join_call(ident_t *loc, int gtid
         return;
     }
 #endif /* OMP_40_ENABLED */
-
+KA_TRACE( 20, ("__kmp_join_call: before do cleanup: T#%d\n",
+                      gtid) );
     /* do cleanup and restore the parent team */
     master_th->th.th_info .ds.ds_tid = team->t.t_master_tid;
     master_th->th.th_local.this_construct = team->t.t_master_this_cons;
@@ -4453,8 +4455,8 @@ __kmp_allocate_thread( kmp_root_t *root, kmp_team_t *team, int new_tid )
     __kmp_global.nth ++;
 
     // [SM] we don't fork the new work thread (will do it later) but set gtid.
-    new_thr->th.th_info.ds.ds_thread = ABT_THREAD_NULL;
-    new_thr->th.th_info.ds.ds_tasklet = ABT_TASK_NULL;
+    new_thr->th.th_info.ds.ds_thread = NULL;//ABT_THREAD_NULL;
+    new_thr->th.th_info.ds.ds_tasklet = NULL;//ABT_TASK_NULL;
     new_thr->th.th_info.ds.ds_gtid = new_gtid;
 ///    /* actually fork it and create the new worker thread */
 ///    KF_TRACE( 10, ("__kmp_allocate_thread: before __kmp_create_worker: %p\n", new_thr ));
@@ -5128,7 +5130,9 @@ __kmp_allocate_team( kmp_root_t *root, int new_nproc, int max_nproc,
 #endif /* OMP_40_ENABLED */
 
         /* reinit the barreir */
-        ABT_barrier_reinit( team->t.t_bar, new_nproc );
+        //ABT_barrier_reinit( team->t.t_bar, new_nproc );
+        glt_barrier_free( &team->t.t_bar);
+        glt_barrier_create( new_nproc, &team->t.t_bar  );
 
         /* reallocate space for arguments if necessary */
         __kmp_alloc_argv_entries( argc, team, TRUE );
@@ -5176,7 +5180,9 @@ __kmp_allocate_team( kmp_root_t *root, int new_nproc, int max_nproc,
             KA_TRACE( 20, ("__kmp_allocate_team: team %d init arrived\n", team->t.t_id ));
 
             /* reinit the barreir */
-            ABT_barrier_reinit( team->t.t_bar, new_nproc );
+            glt_barrier_free( &team->t.t_bar);
+            glt_barrier_create(new_nproc, &team->t.t_bar);
+            //ABT_barrier_reinit( team->t.t_bar, new_nproc );
 
 #if OMP_40_ENABLED
             team->t.t_proc_bind = new_proc_bind;
@@ -5230,7 +5236,8 @@ __kmp_allocate_team( kmp_root_t *root, int new_nproc, int max_nproc,
     KA_TRACE( 20, ("__kmp_allocate_team: team %d init arrived\n",
                     team->t.t_id ));
     /* initialize the team barrier */
-    ABT_barrier_create( new_nproc, &team->t.t_bar );
+    glt_barrier_create( new_nproc, &team->t.t_bar);
+    //ABT_barrier_create( new_nproc, &team->t.t_bar );
 
 #if OMP_40_ENABLED
     team->t.t_proc_bind = new_proc_bind;
@@ -5348,7 +5355,8 @@ __kmp_reap_team( kmp_team_t *team )
     for( i = 0; i < KMP_TEAM_NUM_LOCKS; i++) {
         __kmp_destroy_lock( &team->t.t_lock[i] );
     }
-    ABT_barrier_free( &team->t.t_bar );
+    glt_barrier_free( &team->t.t_bar);
+    //ABT_barrier_free( &team->t.t_bar );
     __kmp_free_team_arrays( team );
     if ( team->t.t_argv != &team->t.t_inline_argv[0] )
         __kmp_free( (void*) team->t.t_argv );
@@ -6012,13 +6020,14 @@ __kmp_internal_fork( ident_t *id, int gtid, kmp_team_t *team )
     /* release the worker threads so they may begin working */
     //__kmp_fork_barrier( gtid, 0 );
     /* [SM] create worker threads here */
+    //we initialize the dispatch to 1 because the 0 is already created
     for (f = 1; f < team->t.t_nproc; f++) {
         kmp_info_t *th = team->t.t_threads[f];
         int th_gtid = __kmp_gtid_from_tid(f, team);
 
-#ifndef KMP_ABT_USE_TASKLET_TEAM
+#ifndef KMP_GLT_USE_TASKLET_TEAM
         if (get__tasklet(th)) {
-            if (th->th.th_info.ds.ds_tasklet == ABT_TASK_NULL) {
+            if (th->th.th_info.ds.ds_tasklet == NULL) {
                 __kmp_create_tasklet_worker( th_gtid, th );
                 KA_TRACE( 20, ("__kmp_internal_fork: after __kmp_create_tasklet_worker: "
                                "T#%d created T#%d\n",
@@ -6026,14 +6035,16 @@ __kmp_internal_fork( ident_t *id, int gtid, kmp_team_t *team )
             } else {
                 // case of reusing the tasklet
                 KMP_DEBUG_ASSERT( th_gtid == th->th.th_info.ds.ds_gtid );
-                __kmp_revive_tasklet_worker( th );
+                //__kmp_revive_tasklet_worker( th );
+                __kmp_create_tasklet_worker( th_gtid, th );
+
                 KA_TRACE( 20, ("__kmp_internal_fork: after __kmp_revive_tasklet_worker: "
                                "T#%d revived T#%d\n",
                               __kmp_get_gtid(), th_gtid) );
             }
         } else {
 #endif
-            if (th->th.th_info.ds.ds_thread == ABT_THREAD_NULL) {
+            if (th->th.th_info.ds.ds_thread == NULL) {
                 __kmp_create_worker( th_gtid, th, __kmp_global.stksize );
                 KA_TRACE( 20, ("__kmp_internal_fork: after __kmp_create_worker: "
                                "T#%d created T#%d\n",
@@ -6041,12 +6052,14 @@ __kmp_internal_fork( ident_t *id, int gtid, kmp_team_t *team )
             } else {
                 // case of reusing the thread
                 KMP_DEBUG_ASSERT( th_gtid == th->th.th_info.ds.ds_gtid );
-                __kmp_revive_worker( th );
+                //__kmp_revive_worker( th );
+                __kmp_create_worker( th_gtid, th, __kmp_global.stksize );
+
                 KA_TRACE( 20, ("__kmp_internal_fork: after __kmp_revive_worker: "
                                "T#%d revived T#%d\n",
                               __kmp_get_gtid(), th_gtid) );
             }
-#ifndef KMP_ABT_USE_TASKLET_TEAM
+#ifndef KMP_GLT_USE_TASKLET_TEAM
         }
 #endif
     }
@@ -6084,7 +6097,7 @@ __kmp_internal_join( ident_t *id, int gtid, kmp_team_t *team )
 
     kmp_taskdata_t *taskdata = this_thr->th.th_current_task;
 
-    __kmp_release_info(this_thr);
+    //__kmp_release_info(this_thr);
 
     /* [SM] join Argobots ULTs here */
     for (f = 1; f < team->t.t_nproc; f++) {
@@ -6093,7 +6106,11 @@ __kmp_internal_join( ident_t *id, int gtid, kmp_team_t *team )
                       gtid, __kmp_gtid_from_tid(f,team)) );
     }
 
-    __kmp_acquire_info_for_task(this_thr, taskdata);
+            KA_TRACE( 20, ("__kmp_internal_join: before __kmp_acquire_info_for_task: T#%d\n",
+                      gtid ) );
+    //[AC]__kmp_acquire_info_for_task(this_thr, taskdata);
+                KA_TRACE( 20, ("__kmp_internal_join: after __kmp_acquire_info_for_task: T#%d\n",
+                      gtid ) );
 
     KMP_MB();       /* Flush all pending memory write invalidates.  */
     KMP_ASSERT( this_thr->th.th_team  ==  team );

@@ -89,7 +89,7 @@ __kmp_for_static_init(
     register kmp_uint32  nth;
     register UT          trip_count;
     register kmp_team_t *team;
-#ifdef KMP_ABT_USE_SELF_INFO
+#ifdef KMP_GLT_USE_SELF_INFO
     register kmp_info_t *th = __kmp_get_self_info();
     KMP_ASSERT( th->th.th_info.ds.ds_gtid == gtid );
 #else
@@ -156,7 +156,7 @@ __kmp_for_static_init(
     } else
     #endif
     {
-#ifdef KMP_ABT_USE_SELF_INFO
+#ifdef KMP_GLT_USE_SELF_INFO
         tid = th->th.th_info.ds.ds_tid;
 #else
         tid  = __kmp_tid_from_gtid( global_tid );
@@ -375,7 +375,7 @@ __kmp_dist_for_static_init(
             __kmp_error_construct( kmp_i18n_msg_CnsLoopIncrIllegal, ct_pdo, loc );
         }
     }
-#ifdef KMP_ABT_USE_SELF_INFO
+#ifdef KMP_GLT_USE_SELF_INFO
     th = __kmp_get_self_info();
     KMP_ASSERT( th->th.th_info.ds.ds_gtid == gtid );
     tid = th->th.th_info.ds.ds_tid;
@@ -620,7 +620,7 @@ __kmp_team_static_init(
             __kmp_error_construct( kmp_i18n_msg_CnsLoopIncrIllegal, ct_pdo, loc );
         }
     }
-#ifdef KMP_ABT_USE_SELF_INFO
+#ifdef KMP_GLT_USE_SELF_INFO
     th = __kmp_get_self_info();
     KMP_ASSERT( th->th.th_info.ds.ds_gtid == gtid );
 #else
