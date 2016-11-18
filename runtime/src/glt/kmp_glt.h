@@ -2250,7 +2250,7 @@ typedef struct KMP_ALIGN_CACHE kmp_base_info {
                                                  // #active threads in pool
     int                  th_active;              // ! sleeping
                                                  // 32 bits for TCR/TCW
-
+    int                  th_single_or_master = 0;
     struct cons_header * th_cons; // used for consistency check
 
 /*

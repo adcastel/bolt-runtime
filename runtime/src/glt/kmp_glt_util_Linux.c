@@ -86,7 +86,6 @@ static int __kmp_abt_sched_free(ABT_sched sched);
 
 typedef glt_team_t kmp_abt_t;
 static kmp_abt_t *__kmp_abt = NULL;
-unsigned long int dispatch = 1;
 /*static inline
 ABT_pool __kmp_abt_get_pool( int gtid )
 {
@@ -601,16 +600,26 @@ __kmp_runtime_initialize( void )
     int i, k;
 
     // Is __kmp_global.xproc a reasonable value for the number of ESs? 
-    env = getenv("KMP_GLT_NUM_THREADS");
+    env = getenv("OMP_NUM_THREADS");
     if (env) {
         nthreads = atoi(env);
-    if (nthreads < __kmp_global.xproc) __kmp_global.xproc = nthreads;
     } else {
-        nthreads = __kmp_global.xproc;
+        env = getenv("KMP_NUM_THREADS"); 
+        if (env){
+            nthreads = atoi(env);
+        }else {
+            env = getenv("KMP_GLT_NUM_THREADS");
+            if (env){
+                nthreads = atoi(env);
+            }
+            else
+                nthreads = __kmp_global.xproc;
+        }
     }
+    if (nthreads < __kmp_global.xproc) __kmp_global.xproc = nthreads;
+
     
     KA_TRACE( 1000, ("__kmp_global_initialize: # of GLT_threads = %d\n", nthreads ) );
-    printf("__kmp_global_initialize: # of GLT_threads = %d\n", nthreads );
 
     sprintf(buff, "%d", nthreads);
     setenv("GLT_NUM_THREADS", buff, 1);
@@ -668,7 +677,7 @@ __kmp_runtime_destroy( void )
 static inline
 void __kmp_abt_free_task(kmp_info_t *th, kmp_taskdata_t *taskdata)
 {
-    int gtid = __kmp_gtid_from_thread(th);
+    int gtid = glt_get_thread_num();//__kmp_gtid_from_thread(th);
 
     KA_TRACE(30, ("__kmp_free_task: (enter) T#%d - task %p\n", gtid, taskdata));
 
@@ -709,16 +718,16 @@ static void __kmp_execute_task(void *arg)
 
     kmp_task_t *task = (kmp_task_t *)arg;
     kmp_taskdata_t *taskdata = KMP_TASK_TO_TASKDATA(task);
-    kmp_info_t *th;
+    
 
     /* [AC] we need to set some flags in the task data so the dependencies can 
      * be checked and fulfilled */
     taskdata -> td_flags.started = 1;
     taskdata -> td_flags.executing = 1;
 
-    th = __kmp_bind_task_to_thread(taskdata->td_team, taskdata);
+    //th = __kmp_bind_task_to_thread(taskdata->td_team, taskdata);
     gtid = glt_get_thread_num();//__kmp_gtid_from_thread(th);
-
+    kmp_info_t *th = __kmp_global.threads[ gtid ];
     KA_TRACE(20, ("__kmp_execute_task: T#%d before executing task %p.\n", gtid, task));
 
     /* [AC] Right now, we don't need to go throw OpenMP task management so we can
@@ -739,25 +748,34 @@ static void __kmp_execute_task(void *arg)
     //__kmp_release_info(th);
 
     KA_TRACE(20, ("__kmp_execute_task: T#%d after executing task %p.\n",
-                  __kmp_gtid_from_thread(th), task));
+                  /*__kmp_gtid_from_thread(th)*/gtid, task));
 }
-
+unsigned long int dispatch=0;
 int __kmp_create_task(kmp_info_t *th, kmp_task_t *task)
 {
     int status;
     int gtid = __kmp_gtid_from_thread(th);
-    int dest = glt_get_thread_num();//__kmp_abt_get_my_pool(gtid);
-
-    KA_TRACE(20, ("__kmp_create_task: T#%d before creating task %p into the pool %p.\n",
+    int dest;
+    if(th->th.th_single_or_master == 1){ //we are in a single region so we may balance the tasks
+        dest = dispatch%glt_get_num_threads();
+        dispatch++;
+        //th = __kmp_global.threads[ dest ];
+    }
+    else
+        dest = glt_get_thread_num();//__kmp_abt_get_my_pool(gtid);
+   /* GLT_timer timer;
+    glt_timer_create(&timer);    */
+    KA_TRACE(20, ("__kmp_create_task: T#%d before creating task %p into the queue %d.\n",
                   gtid, task, dest));
 
     /* Check if the task queue has an empty slot */
     kmp_taskdata_t *td = th->th.th_current_task;
     if (td->td_tq_cur_size == td->td_tq_max_size) {
+        //glt_timer_start(timer);
         size_t new_max_size;
         if (td->td_tq_max_size == 0) {
             /* Empty queue. We allocate 32 slots by default. */
-            new_max_size = 32;
+            new_max_size = 64;
         } else {
             /* The task queue is full. Expand it if possible. */
             new_max_size = td->td_tq_max_size * 2;
@@ -771,18 +789,23 @@ int __kmp_create_task(kmp_info_t *th, kmp_task_t *task)
         size_t size = sizeof(kmp_abt_task_t) * new_max_size;
         td->td_task_queue = (kmp_abt_task_t *)KMP_INTERNAL_REALLOC(queue, size);
         td->td_tq_max_size = new_max_size;
+        //glt_timer_stop(timer);
+        //double secs;
+        //glt_timer_get_secs(timer,&secs);
+        //printf("T%d: Seconds elapsed %f\n",gtid,secs);
     }
 
     /*status = ABT_thread_create(dest, __kmp_execute_task, (void *)task,
                                ABT_THREAD_ATTR_NULL,
                                &td->td_task_queue[td->td_tq_cur_size++]);*/
-    glt_ult_create/*_to*/(__kmp_execute_task, (void *)task,
-                               &td->td_task_queue[td->td_tq_cur_size++]);
+    glt_ult_create_to(__kmp_execute_task, (void *)task,
+                               &td->td_task_queue[td->td_tq_cur_size++],dest);
     //KMP_ASSERT(status == GLT_SUCCESS);
 
-    KA_TRACE(20, ("__kmp_create_task: T#%d after creating task %p into the pool %p.\n",
+    KA_TRACE(20, ("__kmp_create_task: T#%d after creating task %p into the pool %d.\n",
                   gtid, task, dest));
-
+    // printf("__kmp_create_task: T#%d after creating task %p into the pool %d.\n",
+    //              gtid, task, dest);
     return TRUE;
 }
 
@@ -792,21 +815,23 @@ void __kmp_wait_child_tasks(kmp_info_t *th, int yield)
 
     int i, status;
     kmp_taskdata_t *taskdata = th->th.th_current_task;
+    KA_TRACE(20, ("__kmp_wait_child_tasks: T#%d waiting for %d tasks\n", __kmp_gtid_from_thread(th),taskdata->td_tq_cur_size));
+    //printf ("__kmp_wait_child_tasks: T#%d waiting for %d tasks\n", __kmp_gtid_from_thread(th),taskdata->td_tq_cur_size);
 
     if (taskdata->td_tq_cur_size == 0) {
         /* leaf task case */
-        if (yield) {
+        //if (yield) {
             //__kmp_release_info(th);
 
             //ABT_thread_yield();
             glt_yield();
 
-            if (taskdata->td_flags.tiedness) {
-                __kmp_acquire_info_for_task(th, taskdata);
-            } else {
-                __kmp_bind_task_to_thread(th->th.th_team, taskdata);
-            }
-        }
+        //    if (taskdata->td_flags.tiedness) {
+        //        __kmp_acquire_info_for_task(th, taskdata);
+         //   } else {
+         //       __kmp_bind_task_to_thread(th->th.th_team, taskdata);
+         //   }
+        //}
         return;
     }
 
@@ -818,18 +843,20 @@ void __kmp_wait_child_tasks(kmp_info_t *th, int yield)
             glt_yield();
 
     /* Wait until all child tasks are complete. */
+
+    
     for (i = 0; i < taskdata->td_tq_cur_size; i++) {
         glt_ult_join(&taskdata->td_task_queue[i]);
         //status = ABT_thread_free(&taskdata->td_task_queue[i]);
         //KMP_ASSERT(status == ABT_SUCCESS);
     }
     taskdata->td_tq_cur_size = 0;
-
+        
     if (taskdata->td_flags.tiedness) {
         /* Obtain kmp_info to continue the original task. */
-        __kmp_acquire_info_for_task(th, taskdata);
+        //__kmp_acquire_info_for_task(th, taskdata);
     } else {
-        th = __kmp_bind_task_to_thread(th->th.th_team, taskdata);
+        //th = __kmp_bind_task_to_thread(th->th.th_team, taskdata);
     }
 
     KA_TRACE(20, ("__kmp_wait_child_tasks: T#%d done\n", __kmp_gtid_from_thread(th)));
@@ -1093,7 +1120,6 @@ __kmp_create_worker( int gtid, kmp_info_t *th, size_t stack_size )
     if (th->th.th_team->t.t_level > 1) {
         dest = glt_get_thread_num();//__kmp_abt_get_pool(gtid);
     } else {
-        dest = //dispatch++;
         dest = gtid;//dest % glt_get_num_threads();
     }
     KA_TRACE( 10, ("__kmp_create_worker: T#%d, nesting level=%d, target dest=%d\n",
@@ -1316,7 +1342,7 @@ __kmp_barrier( int gtid )
             //KMP_DEBUG_ASSERT( ret == ABT_SUCCESS );
         }
 
-        __kmp_acquire_info_for_task(this_thr, taskdata);
+        //__kmp_acquire_info_for_task(this_thr, taskdata);
     } else { // Team is serialized.
         status = 0;
     }

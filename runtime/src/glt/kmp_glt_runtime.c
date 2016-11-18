@@ -2143,6 +2143,7 @@ __kmp_enter_single( int gtid, ident_t *id_ref, int push_ws )
         /* TODO: Should this be acquire or release? */
         status = KMP_COMPARE_AND_STORE_ACQ32(&team->t.t_construct, old_this,
                                              th->th.th_local.this_construct);
+        th->th.th_single_or_master = status;
     }
 
     if( __kmp_global.env_consistency_check ) {
@@ -2160,6 +2161,11 @@ __kmp_exit_single( int gtid )
 {
     if( __kmp_global.env_consistency_check )
         __kmp_pop_workshare( gtid, ct_psingle, NULL );
+    kmp_info_t *th;
+    th   = __kmp_global.threads[ gtid ];
+    th->th.th_single_or_master = 0;
+
+
 }
 
 
@@ -5401,11 +5407,13 @@ __kmp_free_thread( kmp_info_t *this_th )
 
     /*[AC] This is the last chance to check the pending tasks (if any) it can occur
      if the application ends as soon as the task region ends*/
-    __kmp_wait_child_tasks(this_th, FALSE);
 
     KA_TRACE( 20, ("__kmp_free_thread: T#%d putting T#%d back on free pool.\n",
                 __kmp_get_gtid(), this_th->th.th_info.ds.ds_gtid ));
 
+    __kmp_wait_child_tasks(this_th, FALSE);
+
+    
     KMP_DEBUG_ASSERT( this_th );
 
     this_th->th.th_task_state = 0;

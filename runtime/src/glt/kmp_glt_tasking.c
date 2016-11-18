@@ -1335,9 +1335,9 @@ __kmpc_omp_taskyield( ident_t *loc_ref, kmp_int32 gtid, int end_part )
 
     if (taskdata->td_flags.tiedness) {
         /* Obtain kmp_info to continue the original task. */
-        __kmp_acquire_info_for_task(thread, taskdata);
+        //__kmp_acquire_info_for_task(thread, taskdata);
     } else {
-        thread = __kmp_bind_task_to_thread(thread->th.th_team, taskdata);
+        //thread = __kmp_bind_task_to_thread(thread->th.th_team, taskdata);
     }
 
     KA_TRACE(10, ("__kmpc_omp_taskyield(exit): T#%d task %p resuming, "
