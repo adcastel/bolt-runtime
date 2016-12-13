@@ -1,4 +1,4 @@
-# bolt-runtime
-BOLT: OpenMP over Lightweight Threads
+# glto-runtime
+GLTO: Generic Lightweight Thread OpenMP
 
-For more information about BOLT, please visit http://www.mcs.anl.gov/bolt/.
+
