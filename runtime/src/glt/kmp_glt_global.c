@@ -65,34 +65,44 @@ void
 __kmp_global_initialize(void)
 {
     int status;
-    int i;
+
     /* Initialize Argobots before other initializations. */
     //status = ABT_init(0, NULL);
     //KMP_CHECK_SYSFAIL( "ABT_init", status );
     
-  /*  char *env;
+    char *env;
     char buff[10];
 
     int nthreads;
     int i, k;
 
     // Is __kmp_global.xproc a reasonable value for the number of ESs? 
-    env = getenv("KMP_GLT_NUM_THREADS");
+    env = getenv("OMP_NUM_THREADS");
     if (env) {
         nthreads = atoi(env);
-    if (nthreads < __kmp_global.xproc) __kmp_global.xproc = nthreads;
     } else {
-        nthreads = __kmp_global.xproc;
+        env = getenv("KMP_NUM_THREADS"); 
+        if (env){
+            nthreads = atoi(env);
+        }else {
+            env = getenv("KMP_GLT_NUM_THREADS");
+            if (env){
+                nthreads = atoi(env);
+            }
+            else
+                nthreads = __kmp_global.xproc;
+        }
     }
+    if (nthreads < __kmp_global.xproc) __kmp_global.xproc = nthreads;
+
     
     KA_TRACE( 1000, ("__kmp_global_initialize: # of GLT_threads = %d\n", nthreads ) );
-    printf("__kmp_global_initialize: # of GLT_threads = %d\n", nthreads );
 
     sprintf(buff, "%d", nthreads);
     setenv("GLT_NUM_THREADS", buff, 1);
     
     glt_init(0,NULL);
-*/
+    
     __kmp_global.g = { 0 };
 
     /* --------------------------------------------------------------------------- */
@@ -158,6 +168,7 @@ __kmp_global_initialize(void)
         ABT_mutex_create(&__kmp_global.crit_lock[i]);
     }
 */
+
     glt_mutex_create(&__kmp_global.stdio_lock);
     glt_mutex_create(&__kmp_global.cat_lock);
     glt_mutex_create(&__kmp_global.initz_lock);
@@ -269,6 +280,7 @@ __kmp_global_initialize(void)
     /* ------------------------------------------------------ */
 
     __kmp_init_global = TRUE;
+
 }
 
 void
@@ -295,7 +307,7 @@ __kmp_global_destroy(void)
         glt_mutex_free(&__kmp_global.crit_lock[i]);
     }
 
-    glt_finalize();
+    // [AC] glt_finalize();
     __kmp_init_global = FALSE;
 }
 

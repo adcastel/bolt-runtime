@@ -39,6 +39,7 @@
 void
 __kmpc_begin(ident_t *loc, kmp_int32 flags)
 {
+    //printf("kmpc_begin\n");
     // By default __kmp_ignore_mppbeg() returns TRUE.
     if (__kmp_ignore_mppbeg() == FALSE) {
         __kmp_internal_begin();
@@ -57,6 +58,7 @@ __kmpc_begin(ident_t *loc, kmp_int32 flags)
 void
 __kmpc_end(ident_t *loc)
 {
+    //printf("kmpc_end\n");
     // By default, __kmp_ignore_mppend() returns TRUE which makes __kmpc_end() call no-op.
     // However, this can be overridden with KMP_IGNORE_MPPEND environment variable.
     // If KMP_IGNORE_MPPEND is 0, __kmp_ignore_mppend() returns FALSE and __kmpc_end()
@@ -274,13 +276,15 @@ Do the actual fork and call the microtask in the relevant number of threads.
 void
 __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 {
-  int         gtid = __kmp_entry_gtid();
 
+  int         gtid = __kmp_entry_gtid();
+  //printf("******************kmpc_fork_call %d\n", gtid);
+  fflush(NULL);
   // maybe to save thr_state is enough here
   {
     va_list     ap;
     va_start(   ap, microtask );
-
+  //  printf("kmpc_fork_call\n");
 #ifdef KMP_GLT_USE_TASKLET_TEAM
     kmp_info_t *this_thr = __kmp_global.threads[ gtid ];
     if (get__tasklet(this_thr)) {
@@ -302,6 +306,8 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 #if INCLUDE_SSC_MARKS
     SSC_MARK_FORKING();
 #endif
+      //  printf("kmpc_fork_call antes fork\n");
+
     __kmp_fork_call( loc, gtid, fork_context_intel,
             argc,
             VOLATILE_CAST(microtask_t) microtask, // "wrapped" task
@@ -316,7 +322,9 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 #if INCLUDE_SSC_MARKS
     SSC_MARK_JOINING();
 #endif
-
+    //printf("kmpc_fork_call antes join\n");
+  //printf("******************kmpc_fork_call (join) %d\n", gtid);
+    
     __kmp_join_call( loc, gtid
     );
 #ifdef KMP_GLT_USE_TASKLET_TEAM
@@ -325,6 +333,7 @@ __kmpc_fork_call(ident_t *loc, kmp_int32 argc, kmpc_micro microtask, ...)
 
     va_end( ap );
   }
+   // printf("kmpc_fork_call fiiiiinn\n");
 
 }
 
@@ -715,6 +724,8 @@ kmp_int32
 __kmpc_master(ident_t *loc, kmp_int32 global_tid)
 {
     int status = 0;
+    kmp_info_t *th;
+    th   = __kmp_global.threads[ global_tid ];
 
     KC_TRACE( 10, ("__kmpc_master: called T#%d\n", global_tid ) );
 
@@ -725,6 +736,7 @@ __kmpc_master(ident_t *loc, kmp_int32 global_tid)
         KMP_COUNT_BLOCK(OMP_MASTER);
         KMP_START_EXPLICIT_TIMER(OMP_master);
         status = 1;
+        th->th.th_single_or_master = status;
     }
 
     if ( __kmp_global.env_consistency_check ) {
@@ -760,6 +772,9 @@ __kmpc_end_master(ident_t *loc, kmp_int32 global_tid)
         if( KMP_MASTER_GTID( global_tid ))
             __kmp_pop_sync( global_tid, ct_master, loc );
     }
+    kmp_info_t *th;
+    th   = __kmp_global.threads[ global_tid ];
+    th->th.th_single_or_master = 0;
 }
 
 /*!

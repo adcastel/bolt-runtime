@@ -2336,6 +2336,7 @@ __kmp_wait_to_unref_task_teams(void)
 #if KMP_OS_WINDOWS
             DWORD exit_val;
 #endif
+            //printf("freing %d thread\n",__kmp_gtid_from_thread( thread ));
             if ( TCR_PTR(thread->th.th_task_team) == NULL ) {
                 KA_TRACE( 10, ("__kmp_wait_to_unref_task_team: T#%d task_team == NULL\n",
                                __kmp_gtid_from_thread( thread ) ) );
@@ -2348,7 +2349,7 @@ __kmp_wait_to_unref_task_teams(void)
                 continue;
             }
 #endif
-
+            //printf("ponemos done a FALSE\n");
             done = FALSE;  // Because th_task_team pointer is not NULL for this thread
 
             KA_TRACE( 10, ("__kmp_wait_to_unref_task_team: Waiting for T#%d to unreference task_team\n",

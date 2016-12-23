@@ -104,6 +104,7 @@ static void __kmp_check_mic_type()
 static void
 __kmp_do_serial_initialize( void )
 {
+    //printf("__kmp_do_serial_initialize\n");
     int i, gtid;
     int size;
     int status;
@@ -159,7 +160,7 @@ __kmp_do_serial_initialize( void )
     /* conduct initialization and initial setup of configuration */
 
     __kmp_runtime_initialize();
-
+    //printf("despues de __kmp_runtime_initialize\n");
 #if KMP_ARCH_X86_64 && (KMP_OS_LINUX || KMP_OS_WINDOWS)
     __kmp_check_mic_type();
 #endif
@@ -246,7 +247,7 @@ __kmp_do_serial_initialize( void )
     __kmp_global.g.g_dynamic_mode = dynamic_default;
 
     __kmp_env_initialize( NULL );
-
+    //printf("despues __kmp_env_initialize\n");
     // Print all messages in message catalog for testing purposes.
     #ifdef KMP_DEBUG
         char const * val = __kmp_env_get( "KMP_DUMP_CATALOG" );
@@ -287,7 +288,10 @@ __kmp_do_serial_initialize( void )
     __kmp_global.nth     = 0;
 
     /* setup the uber master thread and hierarchy */
+    //printf("antes __kmp_register_root\n");
     gtid = __kmp_register_root( TRUE );
+    //printf("despues __kmp_register_root\n");
+
     KA_TRACE( 10, ("__kmp_do_serial_initialize  T#%d\n", gtid ));
     KMP_ASSERT( KMP_UBER_GTID( gtid ) );
     KMP_ASSERT( KMP_INITIAL_GTID( gtid ) );
@@ -336,6 +340,7 @@ __kmp_do_serial_initialize( void )
 void
 __kmp_serial_initialize( void )
 {
+    //printf("__kmp_serial_initialize");
     if ( __kmp_global.init_serial ) {
         return;
     }
@@ -356,6 +361,7 @@ __kmp_serial_initialize( void )
 static void
 __kmp_do_middle_initialize( void )
 {
+   // printf("__kmp_do_middle_initialize");
     int i, j;
     int prev_dflt_team_nth;
 
@@ -459,6 +465,7 @@ __kmp_do_middle_initialize( void )
 void
 __kmp_middle_initialize( void )
 {
+  //  printf("__kmp_middle_initialize");
     if ( __kmp_global.init_middle ) {
         return;
     }
@@ -474,6 +481,8 @@ __kmp_middle_initialize( void )
 void
 __kmp_parallel_initialize( void )
 {
+    //    printf("__kmp_parallel_initialize");
+
     int gtid = __kmp_entry_gtid();      // this might be a new root
 
     /* synchronize parallel initialization (for sibling) */
@@ -822,6 +831,7 @@ __kmp_internal_end(void)
 void
 __kmp_internal_end_library( int gtid_req )
 {
+    //printf("__kmp_internal_end_library 1 gtid_req=%d\n",gtid_req);
     /* if we have already cleaned up, don't try again, it wouldn't be pretty */
     /* this shouldn't be a race condition because __kmp_internal_end() is the
      * only place to clear __kmp_serial_init */
@@ -838,12 +848,16 @@ __kmp_internal_end_library( int gtid_req )
         return;
     }
 
+    //printf("__kmp_internal_end_library 2\n");
 
     KMP_MB();       /* Flush all pending memory write invalidates.  */
 
     /* find out who we are and what we should do */
     {
+
         int gtid = (gtid_req>=0) ? gtid_req : __kmp_gtid_get_specific();
+                    //printf("__kmp_internal_end_library 3 gtid=%d\n",gtid);
+
         KA_TRACE( 10, ("__kmp_internal_end_library: enter T#%d  (%d)\n", gtid, gtid_req ));
         if( gtid == KMP_GTID_SHUTDOWN ) {
             KA_TRACE( 10, ("__kmp_internal_end_library: !__kmp_init_runtime, system already shutdown\n" ));
@@ -855,17 +869,25 @@ __kmp_internal_end_library( int gtid_req )
             KA_TRACE( 10, ("__kmp_internal_end_library: gtid not registered or system shutdown\n" ));
             /* we don't know who we are, but we may still shutdown the library */
         } else if( KMP_UBER_GTID( gtid )) {
+                                //printf("__kmp_internal_end_library 31 gtid=%d\n",gtid);
+
             /* unregister ourselves as an uber thread.  gtid is no longer valid */
             if( __kmp_global.root[gtid]->r.r_active ) {
+                                    //printf("__kmp_internal_end_library 32 gtid=%d\n",gtid);
+
                 __kmp_global.g.g_abort = -1;
                 TCW_SYNC_4(__kmp_global.g.g_done, TRUE);
                 KA_TRACE( 10, ("__kmp_internal_end_library: root still active, abort T#%d\n", gtid ));
                 return;
             } else {
+                                    //printf("__kmp_internal_end_library 33 gtid=%d\n",gtid);
+
                 KA_TRACE( 10, ("__kmp_internal_end_library: unregistering sibling T#%d\n", gtid ));
                 __kmp_unregister_root_current_thread( gtid );
             }
         } else {
+                                //printf("__kmp_internal_end_library 34 gtid=%d\n",gtid);
+
             /* worker threads may call this function through the atexit handler, if they call exit() */
             /* For now, skip the usual subsequent processing and just dump the debug buffer.
                TODO: do a thorough shutdown instead
@@ -878,7 +900,10 @@ __kmp_internal_end_library( int gtid_req )
         }
     }
     /* synchronize the termination process */
+        //printf("__kmp_internal_end_library 4\n");
+
     __kmp_acquire_bootstrap_lock( &__kmp_global.initz_lock );
+    //printf("__kmp_internal_end_library 5\n");
 
     /* have we already finished */
     if( __kmp_global.g.g_abort ) {
@@ -899,12 +924,15 @@ __kmp_internal_end_library( int gtid_req )
        __kmp_do_serial_initialize and __kmp_internal_end_*.
     */
     __kmp_acquire_bootstrap_lock( &__kmp_global.forkjoin_lock );
+    //printf("__kmp_internal_end_library 6\n");
 
     /* now we can safely conduct the actual termination */
     __kmp_internal_end();
+    //printf("__kmp_internal_end_library 7\n");
 
     __kmp_release_bootstrap_lock( &__kmp_global.forkjoin_lock );
     __kmp_release_bootstrap_lock( &__kmp_global.initz_lock );
+    //printf("__kmp_internal_end_library 8\n");
 
     KA_TRACE( 10, ("__kmp_internal_end_library: exit\n" ) );
 
@@ -912,11 +940,13 @@ __kmp_internal_end_library( int gtid_req )
         if ( __kmp_debug_buf )
             __kmp_dump_debug_buffer();
     #endif
+    //printf("__kmp_internal_end_library 9\n");
 
     __kmp_fini_allocator();
 
     /* last cleanup part */
     __kmp_global_destroy();
+    //printf("__kmp_internal_end_library 10\n");
 
 } // __kmp_internal_end_library
 
@@ -1382,7 +1412,10 @@ __kmp_register_root( int initial_thread )
     kmp_root_t *root;
     int         gtid;
     int         capacity;
+   // printf("__kmp_register_root antes lock\n");
     __kmp_acquire_bootstrap_lock( &__kmp_global.forkjoin_lock );
+   // printf("__kmp_register_root despues lock\n");
+
     KA_TRACE( 20, ("__kmp_register_root: entered\n"));
     KMP_MB();
 
@@ -1617,17 +1650,23 @@ __kmp_reset_root(int gtid, kmp_root_t *root)
 void
 __kmp_unregister_root_current_thread( int gtid )
 {
+    //printf("__kmp_unregister_root_current_thread gtid=%d\n",gtid);
     KA_TRACE( 1, ("__kmp_unregister_root_current_thread: enter T#%d\n", gtid ));
     /* this lock should be ok, since unregister_root_current_thread is never called during
      * and abort, only during a normal close.  furthermore, if you have the
      * forkjoin lock, you should never try to get the initz lock */
+    //printf("__kmp_unregister_root_current_thread 2 gtid=%d\n",gtid);
 
     __kmp_acquire_bootstrap_lock( &__kmp_global.forkjoin_lock );
     if( TCR_4(__kmp_global.g.g_done) || !__kmp_global.init_serial ) {
+               // printf("__kmp_unregister_root_current_thread 25 gtid=%d\n",gtid);
+
         KC_TRACE( 10, ("__kmp_unregister_root_current_thread: already finished, exiting T#%d\n", gtid ));
         __kmp_release_bootstrap_lock( &__kmp_global.forkjoin_lock );
         return;
     }
+        //printf("__kmp_unregister_root_current_thread 3 gtid=%d\n",gtid);
+
     kmp_root_t *root = __kmp_global.root[gtid];
 
     KMP_DEBUG_ASSERT( __kmp_global.threads && __kmp_global.threads[gtid] );
@@ -1637,17 +1676,20 @@ __kmp_unregister_root_current_thread( int gtid )
 
 
     KMP_MB();
+        //printf("__kmp_unregister_root_current_thread 4 gtid=%d\n",gtid);
 
 #if OMP_41_ENABLED
    kmp_info_t * thread = __kmp_global.threads[gtid];
    kmp_team_t * team = thread->th.th_team;
    kmp_task_team_t *   task_team = thread->th.th_task_team;
+        //printf("__kmp_unregister_root_current_thread 5 gtid=%d\n",gtid);
 
    // we need to wait for the proxy tasks before finishing the thread
    if ( task_team != NULL && task_team->tt.tt_found_proxy_tasks ) {
         __kmp_task_team_wait(thread, team, 1 );
    }
 #endif
+        //printf("__kmp_unregister_root_current_thread 6 gtid=%d\n",gtid);
 
     __kmp_reset_root(gtid, root);
 
@@ -1659,6 +1701,8 @@ __kmp_unregister_root_current_thread( int gtid )
     KC_TRACE( 10, ("__kmp_unregister_root_current_thread: T#%d unregistered\n", gtid ));
 
     __kmp_release_bootstrap_lock( &__kmp_global.forkjoin_lock );
+        //printf("__kmp_unregister_root_current_thread (end)\n");
+
 }
 
 /* ------------------------------------------------------------------------ */
@@ -1667,11 +1711,13 @@ __kmp_unregister_root_current_thread( int gtid )
 int
 __kmp_ignore_mppbeg( void )
 {
+
     char *env;
 
     if ((env = getenv( "KMP_IGNORE_MPPBEG" )) != NULL) {
-        if (__kmp_str_match_false( env ))
+        if (__kmp_str_match_false( env )){
             return FALSE;
+        }
     }
     // By default __kmpc_begin() is no-op.
     return TRUE;
@@ -1701,6 +1747,7 @@ __kmp_ignore_mppend( void )
 int
 __kmp_get_global_thread_id( )
 {
+
     KA_TRACE( 1000, ( "*** __kmp_get_global_thread_id: entering, nproc=%d  all_nproc=%d\n",
                       __kmp_global.nth, __kmp_global.all_nth ));
 
@@ -1719,24 +1766,27 @@ int
 __kmp_get_global_thread_id_reg( )
 {
     int gtid;
-        //KA_TRACE( 1000, ( "*** __kmp_get_global_thread_id_reg: antes global\n" ));
-
+        KA_TRACE( 1000, ( "*** __kmp_get_global_thread_id_reg: before global\n" ));
+        //printf("__kmp_get_global_thread_id_reg 1\n");
     if ( !__kmp_init_global ) {
         __kmp_global_initialize();
     }
-        //KA_TRACE( 1000, ( "*** __kmp_get_global_thread_id_reg: despues global\n" ));
+        //printf("__kmp_get_global_thread_id_reg 2\n");
+        KA_TRACE( 1000, ( "*** __kmp_get_global_thread_id_reg: after global\n" ));
 
+    //printf("__kmp_get_global_thread_id_reg 3\n");    
     if ( !__kmp_global.init_serial ) {
         gtid = KMP_GTID_DNE;
     } else {
-        //KA_TRACE( 1000, ( "*** __kmp_get_global_thread_id_reg: using keyed TLS\n" ));
+        KA_TRACE( 1000, ( "*** __kmp_get_global_thread_id_reg: using keyed TLS\n" ));
         gtid = __kmp_gtid_get_specific();
     }
-
+    //printf("__kmp_get_global_thread_id_reg 4\n");
     /* we must be a new uber master sibling thread */
     if( gtid == KMP_GTID_DNE ) {
         KA_TRACE( 10, ( "__kmp_get_global_thread_id_reg: Encountered new root thread. "
                         "Registering a new gtid.\n" ));
+        //printf("__kmp_get_global_thread_id_reg 5\n");
         __kmp_acquire_bootstrap_lock( &__kmp_global.initz_lock );
         if( !__kmp_global.init_serial ) {
             __kmp_do_serial_initialize();
@@ -1744,10 +1794,12 @@ __kmp_get_global_thread_id_reg( )
         } else {
             gtid = __kmp_register_root(FALSE);
         }
+//printf("__kmp_get_global_thread_id_reg 6\n");
         __kmp_release_bootstrap_lock( &__kmp_global.initz_lock );
+
         /*__kmp_printf( "+++ %d\n", gtid ); */ /* GROO */
     }
-
+//printf("__kmp_get_global_thread_id_reg 7\n");
     KMP_DEBUG_ASSERT( gtid >=0 );
 
     return gtid;
@@ -2359,7 +2411,7 @@ __kmp_fork_team_threads( kmp_root_t *root, kmp_team_t *team,
     int use_hot_team;
 
     KA_TRACE( 10, ("__kmp_fork_team_threads: new_nprocs = %d\n", team->t.t_nproc ) );
-    KMP_DEBUG_ASSERT( master_gtid == __kmp_get_gtid() );
+    //KMP_DEBUG_ASSERT( master_gtid == __kmp_get_gtid() );
     KMP_MB();
 
     /* first, let's setup the master thread */
@@ -2388,7 +2440,7 @@ __kmp_fork_team_threads( kmp_root_t *root, kmp_team_t *team,
         if( level < __kmp_global.hot_teams_max_level ) {
             if( hot_teams[level].hot_team ) {
                 // hot team has already been allocated for given level
-                KMP_DEBUG_ASSERT(hot_teams[level].hot_team == team);
+                // [MTH]KMP_DEBUG_ASSERT(hot_teams[level].hot_team == team);
                 use_hot_team = 1; // the team is ready to use
             } else {
                 use_hot_team = 0; // AC: threads are not allocated yet
@@ -2410,6 +2462,7 @@ __kmp_fork_team_threads( kmp_root_t *root, kmp_team_t *team,
 
         /* now, install the worker threads */
         for ( i=1 ;  i < team->t.t_nproc ; i++ ) {
+             //printf("en fork_team_threads con el nuevo gtid %d\n",i);
 
             /* fork or reallocate a new thread and install it in team */
             kmp_info_t *thr = __kmp_allocate_thread( root, team, i );
@@ -2743,6 +2796,7 @@ __kmp_fork_call(
     KMP_COUNT_VALUE(OMP_PARALLEL_args, argc);
 
     KA_TRACE( 20, ("__kmp_fork_call: enter T#%d\n", gtid ));
+    //[QTH]printf("__kmp_fork_call: enter T#%d\n", gtid );
 ///    if ( __kmp_global.stkpadding > 0 &&  __kmp_global.root[gtid] != NULL ) {
 ///        /* Some systems prefer the stack for the root thread(s) to start with */
 ///        /* some gap from the parent stack to prevent false sharing. */
@@ -2765,6 +2819,7 @@ __kmp_fork_call(
     root          = master_th->th.th_root;
     master_active = root->r.r_active;
     master_set_numthreads = master_th->th.th_set_nproc;
+    //[QTH]printf("__kmp_fork_call: 1 T#%d\n", gtid );
 
     // Nested level will be an index in the nested nthreads array
     level         = parent_team->t.t_level;
@@ -2783,6 +2838,7 @@ __kmp_fork_call(
 #endif
 
     master_th->th.th_ident = loc;
+    //[QTH]printf("__kmp_fork_call: 2 T#%d\n", gtid );
 
 #if OMP_40_ENABLED
     if ( master_th->th.th_teams_microtask &&
@@ -2816,6 +2872,7 @@ __kmp_fork_call(
 
             return TRUE;
         }
+    //[QTH]printf("__kmp_fork_call: 3 T#%d\n", gtid );
 
         parent_team->t.t_pkfn  = microtask;
         parent_team->t.t_invoke = invoker;
@@ -2836,6 +2893,7 @@ __kmp_fork_call(
             }
             master_th->th.th_set_nproc = 0;
         }
+    //[QTH]printf("__kmp_fork_call: 4 T#%d\n", gtid );
 
 #if USE_DEBUGGER
     if ( __kmp_debugging ) {    // Let debugger override number of threads.
@@ -2853,11 +2911,17 @@ __kmp_fork_call(
         /* Invoke microtask for MASTER thread */
         KA_TRACE( 20, ("__kmp_fork_call: T#%d(%d:0) invoke microtask = %p\n",
                     gtid, parent_team->t.t_id, parent_team->t.t_pkfn ) );
+    //[QTH]printf("__kmp_fork_call: 5 T#%d\n", gtid );
 
         {
             KMP_TIME_BLOCK(OMP_work);
             if (! parent_team->t.t_invoke( gtid )) {
                 KMP_ASSERT2( 0, "cannot invoke microtask for MASTER thread" );
+            }
+            else{
+                KA_TRACE( 20, ("__kmp_fork_call: T#%d(%d:0) done microtask for MASTER = %p\n",
+                        gtid, parent_team->t.t_id, parent_team->t.t_pkfn ) );
+
             }
         }
         KA_TRACE( 20, ("__kmp_fork_call: T#%d(%d:0) done microtask = %p\n",
@@ -2875,6 +2939,7 @@ __kmp_fork_call(
         KMP_DEBUG_ASSERT(master_th->th.th_task_team == parent_team->t.t_task_team[master_th->th.th_task_state]);
     }
 #endif
+    //[QTH]printf("__kmp_fork_call: 6 T#%d\n", gtid );
 
     if ( parent_team->t.t_active_level >= master_th->th.th_current_task->td_icvs.max_active_levels ) {
         nthreads = 1;
@@ -2919,6 +2984,7 @@ __kmp_fork_call(
         }
     }
     KMP_DEBUG_ASSERT( nthreads > 0 );
+    //[QTH]printf("__kmp_fork_call: 7 T#%d\n", gtid );
 
     /* If we temporarily changed the set number of threads then restore it now */
     master_th->th.th_set_nproc = 0;
@@ -3025,6 +3091,7 @@ __kmp_fork_call(
     // TODO: GEH - cannot do this assertion because root thread not set up as executing
     // KMP_ASSERT( master_th->th.th_current_task->td_flags.executing == 1 );
     master_th->th.th_current_task->td_flags.executing = 0;
+    //[QTH]printf("__kmp_fork_call: 8 T#%d\n", gtid );
 
 #if OMP_40_ENABLED
     if ( !master_th->th.th_teams_microtask || level > teams_level )
@@ -3042,6 +3109,7 @@ __kmp_fork_call(
     else {
         nthreads_icv = 0;  // don't update
     }
+    //[QTH]printf("__kmp_fork_call: 9 T#%d\n", gtid );
 
 #if OMP_40_ENABLED
     // Figure out the proc_bind_policy for the new team.
@@ -3063,6 +3131,7 @@ __kmp_fork_call(
             proc_bind_icv = __kmp_global.nested_proc_bind.bind_types[level+1];
         }
     }
+    //[QTH]printf("__kmp_fork_call: 91 T#%d\n", gtid );
 
     // Reset for next parallel region
     master_th->th.th_set_proc_bind = proc_bind_default;
@@ -3087,6 +3156,8 @@ __kmp_fork_call(
 #endif /* OMP_40_ENABLED */
 
         /* allocate a new parallel team */
+        //[QTH]printf("__kmp_fork_call: 92 T#%d\n", gtid );
+
         KF_TRACE( 10, ( "__kmp_fork_call: before __kmp_allocate_team\n" ) );
         team = __kmp_allocate_team(root, nthreads, nthreads,
 #if OMP_40_ENABLED
@@ -3095,6 +3166,8 @@ __kmp_fork_call(
                                    &new_icvs, argc USE_NESTED_HOT_ARG(master_th) );
     } else {
         /* allocate a new parallel team */
+           //[QTH] printf("__kmp_fork_call: 92b T#%d\n", gtid );
+
         KF_TRACE( 10, ( "__kmp_fork_call: before __kmp_allocate_team\n" ) );
         team = __kmp_allocate_team(root, nthreads, nthreads,
 #if OMP_40_ENABLED
@@ -3104,6 +3177,7 @@ __kmp_fork_call(
                                    USE_NESTED_HOT_ARG(master_th) );
     }
     KF_TRACE( 10, ( "__kmp_fork_call: after __kmp_allocate_team - team = %p\n", team ) );
+    //[QTH]printf("__kmp_fork_call: 93 T#%d\n", gtid );
 
     /* setup the new team */
     team->t.t_master_tid = master_tid;
@@ -3133,6 +3207,7 @@ __kmp_fork_call(
 
     // Update the floating point rounding in the team if required.
     propagateFPControl(team);
+    //[QTH]printf("__kmp_fork_call: 10 T#%d\n", gtid );
 
     if ( __kmp_global.tasking_mode != tskm_immediate_exec ) {
         // Set master's task team to team's task team. Unless this is hot team, it should be NULL.
@@ -3230,7 +3305,9 @@ __kmp_fork_call(
     if ( ap )   // AC: skip __kmp_internal_fork at teams construct, let only master threads execute
 #endif /* OMP_40_ENABLED */
     {
+     //[QTH]   printf("Voy al internal fork %d\n",gtid);
         __kmp_internal_fork( loc, gtid, team );
+     //[QTH]   printf("Vuelvo del internal fork %d\n",gtid);
         KF_TRACE(10, ("__kmp_internal_fork : after : root=%p, team=%p, master_th=%p, gtid=%d\n",
                       root, team, master_th, gtid));
     }
@@ -3248,15 +3325,20 @@ __kmp_fork_call(
     {
         KMP_TIME_BLOCK(OMP_work);
         // KMP_TIME_DEVELOPER_BLOCK(USER_master_invoke);
+            //[QTH]    printf("Voy a ejecutar esto %p aqui %d\n",team->t.t_invoke, gtid);
+
         if (! team->t.t_invoke( gtid )) {
             KMP_ASSERT2( 0, "cannot invoke microtask for MASTER thread" );
         }
+               //[QTH]                 printf("Vuelvo de ejecutar esto %d\n",gtid);
+
     }
     KA_TRACE( 20, ("__kmp_fork_call: T#%d(%d:0) done microtask = %p\n",
         gtid, team->t.t_id, team->t.t_pkfn ) );
     KMP_MB();       /* Flush all pending memory write invalidates.  */
 
     KA_TRACE( 20, ("__kmp_fork_call: parallel exit T#%d\n", gtid ));
+   //[QTH] printf("__kmp_fork_call: parallel exit T#%d\n", gtid );
 
     return TRUE;
 }
@@ -3268,6 +3350,7 @@ __kmp_join_call(ident_t *loc, int gtid
 #endif /* OMP_40_ENABLED */
 )
 {
+    //printf("kmp_join_call 1\n");
     KMP_TIME_DEVELOPER_BLOCK(KMP_join_call);
     kmp_team_t     *team;
     kmp_team_t     *parent_team;
@@ -3294,6 +3377,7 @@ __kmp_join_call(ident_t *loc, int gtid
         KMP_DEBUG_ASSERT( master_th->th.th_task_team == team->t.t_task_team[master_th->th.th_task_state] );
     }
 #endif
+    //printf("kmp_join_call 2\n");
 
     if( team->t.t_serialized ) {
 #if OMP_40_ENABLED
@@ -3316,6 +3400,7 @@ __kmp_join_call(ident_t *loc, int gtid
 
         return;
     }
+    //printf("kmp_join_call 3\n");
 
     master_active = team->t.t_master_active;
 
@@ -3337,6 +3422,8 @@ __kmp_join_call(ident_t *loc, int gtid
 KA_TRACE( 20, ("__kmp_join_call: after __kmp_internal_join: T#%d\n",
                       gtid) );
 #if OMP_40_ENABLED
+    //printf("kmp_join_call 4\n");
+
     if ( master_th->th.th_teams_microtask &&
          !exit_teams &&
          team->t.t_pkfn != (microtask_t)__kmp_teams_master &&
@@ -3370,6 +3457,8 @@ KA_TRACE( 20, ("__kmp_join_call: after __kmp_internal_join: T#%d\n",
 
         return;
     }
+        //printf("kmp_join_call 5\n");
+
 #endif /* OMP_40_ENABLED */
 KA_TRACE( 20, ("__kmp_join_call: before do cleanup: T#%d\n",
                       gtid) );
@@ -3385,6 +3474,7 @@ KA_TRACE( 20, ("__kmp_join_call: before do cleanup: T#%d\n",
        from the serial user code called after this function returns.
     */
     __kmp_acquire_bootstrap_lock( &__kmp_global.forkjoin_lock );
+    //printf("kmp_join_call 6\n");
 
 #if OMP_40_ENABLED
     if ( !master_th->th.th_teams_microtask || team->t.t_level > master_th->th.th_teams_level )
@@ -3411,6 +3501,7 @@ KA_TRACE( 20, ("__kmp_join_call: before do cleanup: T#%d\n",
 
     if ( root->r.r_active != master_active )
         root->r.r_active = master_active;
+    //printf("kmp_join_call 7\n");
 
     __kmp_free_team( root, team USE_NESTED_HOT_ARG(master_th) ); // this will free worker threads
 
@@ -3453,6 +3544,7 @@ KA_TRACE( 20, ("__kmp_join_call: before do cleanup: T#%d\n",
      master_th->th.th_current_task->td_flags.executing = 1;
 
     __kmp_release_bootstrap_lock( &__kmp_global.forkjoin_lock );
+    //printf("kmp_join_call end\n");
 
     KMP_MB();
     KA_TRACE( 20, ("__kmp_join_call: exit T#%d\n", gtid ));
@@ -4389,6 +4481,7 @@ __kmp_allocate_thread( kmp_root_t *root, kmp_team_t *team, int new_tid )
 
 
     /* no, well fork a new one */
+    //printf("%d == %d??\n",__kmp_global.nth, __kmp_global.all_nth);
     KMP_ASSERT( __kmp_global.nth    == __kmp_global.all_nth );
     KMP_ASSERT( __kmp_global.all_nth < __kmp_global.threads_capacity );
 
@@ -4461,8 +4554,8 @@ __kmp_allocate_thread( kmp_root_t *root, kmp_team_t *team, int new_tid )
     __kmp_global.nth ++;
 
     // [SM] we don't fork the new work thread (will do it later) but set gtid.
-    new_thr->th.th_info.ds.ds_thread = NULL;//ABT_THREAD_NULL;
-    new_thr->th.th_info.ds.ds_tasklet = NULL;//ABT_TASK_NULL;
+    new_thr->th.th_info.ds.ds_thread = GLT_UNIT_NULL;//ABT_THREAD_NULL;
+    new_thr->th.th_info.ds.ds_tasklet = GLT_UNIT_NULL;//ABT_TASK_NULL;
     new_thr->th.th_info.ds.ds_gtid = new_gtid;
 ///    /* actually fork it and create the new worker thread */
 ///    KF_TRACE( 10, ("__kmp_allocate_thread: before __kmp_create_worker: %p\n", new_thr ));
@@ -5068,6 +5161,7 @@ __kmp_allocate_team( kmp_root_t *root, int new_nproc, int max_nproc,
 
             /* allocate new threads for the hot team */
             for( f = team->t.t_nproc  ;  f < new_nproc  ;  f++ ) {
+                //printf("en allocate team con el nuevo gtid %d\n",f);
                 kmp_info_t * new_worker = __kmp_allocate_thread( root, team, f );
                 KMP_DEBUG_ASSERT( new_worker );
                 team->t.t_threads[ f ] = new_worker;
@@ -5137,7 +5231,11 @@ __kmp_allocate_team( kmp_root_t *root, int new_nproc, int max_nproc,
 
         /* reinit the barreir */
         //ABT_barrier_reinit( team->t.t_bar, new_nproc );
+        // Needed just in case it is not created before. 
+        // In massiveThreads if it is not created, it cannot be released.
+        glt_barrier_create( new_nproc, &team->t.t_bar  );
         glt_barrier_free( &team->t.t_bar);
+
         glt_barrier_create( new_nproc, &team->t.t_bar  );
 
         /* reallocate space for arguments if necessary */
@@ -5244,7 +5342,6 @@ __kmp_allocate_team( kmp_root_t *root, int new_nproc, int max_nproc,
     /* initialize the team barrier */
     glt_barrier_create( new_nproc, &team->t.t_bar);
     //ABT_barrier_create( new_nproc, &team->t.t_bar );
-
 #if OMP_40_ENABLED
     team->t.t_proc_bind = new_proc_bind;
 #endif
@@ -5326,7 +5423,7 @@ __kmp_free_team( kmp_root_t *root, kmp_team_t *team  USE_NESTED_HOT_ARG(kmp_info
 
         /* free the worker threads */
         for ( f = 1; f < team->t.t_nproc; ++ f ) {
-            KMP_DEBUG_ASSERT( team->t.t_threads[ f ] );
+            //[MTH]KMP_DEBUG_ASSERT( team->t.t_threads[ f ] );
             __kmp_free_thread( team->t.t_threads[ f ] );
             team->t.t_threads[ f ] = NULL;
         }
@@ -5662,7 +5759,7 @@ static void
 __kmp_register_library_startup(
     void
 ) {
-
+    //printf("__kmp_register_library_startup\n");
     char * name   = __kmp_reg_status_name();  // Name of the environment variable.
     int    done   = 0;
     union {
@@ -5804,7 +5901,7 @@ __kmp_run_before_invoked_task( int gtid, int tid, kmp_info_t *this_thr,
 //    KMP_CACHE_PREFETCH( &this_thr->th.th_bar[ bs_forkjoin_barrier ].bb.b_arrived );
 //#endif /* KMP_CACHE_MANAGE */
     dispatch = (kmp_disp_t *)TCR_PTR(this_thr->th.th_dispatch);
-    KMP_DEBUG_ASSERT( dispatch );
+    //[MTH]KMP_DEBUG_ASSERT( dispatch );
     KMP_DEBUG_ASSERT( team->t.t_dispatch );
     //KMP_DEBUG_ASSERT( this_thr->th.th_dispatch == &team->t.t_dispatch[ this_thr->th.th_info.ds.ds_tid ] );
 
@@ -5833,20 +5930,26 @@ __kmp_invoke_task_func( int gtid )
     int          tid      = __kmp_tid_from_gtid( gtid );
     kmp_info_t  *this_thr = __kmp_global.threads[ gtid ];
     kmp_team_t  *team     = this_thr->th.th_team;
-
+    //[QTH]printf("T%d en __kmp_invoke_task_func\n", gtid);
     __kmp_run_before_invoked_task( gtid, tid, this_thr, team );
+        //[QTH]printf("T%d en __kmp_invoke_task_func 2\n", gtid);
+
 #if INCLUDE_SSC_MARKS
     SSC_MARK_INVOKING();
 #endif
 
     {
         KMP_TIME_BLOCK(OMP_work);
+                //[QTH]printf("T%d en __kmp_invoke_task_func %p 3 with  %d args\n", gtid,team->t.t_pkfn,(int) team->t.t_argc);
+
         rc = __kmp_invoke_microtask( (microtask_t) TCR_SYNC_PTR(team->t.t_pkfn),
-                                     gtid, tid, (int) team->t.t_argc, (void **) team->t.t_argv
+                                    gtid, tid, (int) team->t.t_argc, (void **) team->t.t_argv
                                      );
     }
+       //[QTH] printf("T%d en __kmp_invoke_task_func 4\n", gtid);
 
     __kmp_run_after_invoked_task( gtid, tid, this_thr, team );
+       //[QTH] printf("T%d en __kmp_invoke_task_func 5\n", gtid);
 
     return rc;
 }
@@ -5992,7 +6095,7 @@ __kmp_internal_fork( ident_t *id, int gtid, kmp_team_t *team )
 
     KMP_DEBUG_ASSERT( team );
     KMP_DEBUG_ASSERT( this_thr->th.th_team  ==  team );
-    KMP_ASSERT(       KMP_MASTER_GTID(gtid) );
+    //[MTH]KMP_ASSERT(       KMP_MASTER_GTID(gtid) );
     KMP_MB();       /* Flush all pending memory write invalidates.  */
 
     team->t.t_construct = 0;          /* no single directives seen yet */
@@ -6019,10 +6122,10 @@ __kmp_internal_fork( ident_t *id, int gtid, kmp_team_t *team )
     KMP_ASSERT( this_thr->th.th_team  ==  team );
 
 #ifdef KMP_DEBUG
-    for( f=0 ; f<team->t.t_nproc ; f++ ) {
+  /*[QTH]  for( f=0 ; f<team->t.t_nproc ; f++ ) {
         KMP_DEBUG_ASSERT( team->t.t_threads[f] &&
                           team->t.t_threads[f]->th.th_team_nproc == team->t.t_nproc );
-    }
+    }*/
 #endif /* KMP_DEBUG */
 
     /* release the worker threads so they may begin working */
@@ -6052,7 +6155,7 @@ __kmp_internal_fork( ident_t *id, int gtid, kmp_team_t *team )
             }
         } else {
 #endif
-            if (th->th.th_info.ds.ds_thread == NULL) {
+            if (th->th.th_info.ds.ds_thread == GLT_UNIT_NULL) {
                 __kmp_create_worker( th_gtid, th, __kmp_global.stksize );
                 KA_TRACE( 20, ("__kmp_internal_fork: after __kmp_create_worker: "
                                "T#%d created T#%d\n",
@@ -6082,7 +6185,8 @@ __kmp_internal_join( ident_t *id, int gtid, kmp_team_t *team )
 
     KMP_DEBUG_ASSERT( team );
     KMP_DEBUG_ASSERT( this_thr->th.th_team  ==  team );
-    KMP_ASSERT(       KMP_MASTER_GTID(gtid) );
+    //[QTH]KMP_ASSERT(       KMP_MASTER_GTID(gtid) );
+    
     KMP_MB();       /* Flush all pending memory write invalidates.  */
 
     /* Join barrier after fork */
@@ -6100,6 +6204,8 @@ __kmp_internal_join( ident_t *id, int gtid, kmp_team_t *team )
 
     /* [AC] here, the master thread checks the task queue and execute the remaining tasks*/
     __kmp_wait_child_tasks(this_thr, FALSE);
+        KA_TRACE( 20, ("__kmp_internal_join: after __kmp_wait_child_tasks: T#%d waited T#%d\n",
+                                      gtid, __kmp_gtid_from_tid(f,team)) );
 
     //__kmp_join_barrier( gtid );  /* wait for everyone */
 
@@ -6108,6 +6214,7 @@ __kmp_internal_join( ident_t *id, int gtid, kmp_team_t *team )
     //__kmp_release_info(this_thr);
 
     /* [SM] join Argobots ULTs here */
+    
     for (f = 1; f < team->t.t_nproc; f++) {
         __kmp_join_worker( team->t.t_threads[f] );
         KA_TRACE( 20, ("__kmp_internal_join: after __kmp_join_worker: T#%d joined T#%d\n",
@@ -6121,7 +6228,7 @@ __kmp_internal_join( ident_t *id, int gtid, kmp_team_t *team )
                       gtid ) );
 
     KMP_MB();       /* Flush all pending memory write invalidates.  */
-    KMP_ASSERT( this_thr->th.th_team  ==  team );
+    //[MTH]KMP_ASSERT( this_thr->th.th_team  ==  team );
 }
 
 
@@ -6298,6 +6405,8 @@ __kmp_user_set_library (enum library_type arg)
 void
 __kmp_aux_set_stacksize( size_t arg )
 {
+              //("__kmp_aux_set_stacksize");
+
     if (! __kmp_global.init_serial)
         __kmp_serial_initialize();
 
@@ -6369,6 +6478,8 @@ __kmp_aux_set_defaults(
     char const * str,
     int          len
 ) {
+       //       printf("__kmp_aux_set_defaults");
+
     if ( ! __kmp_global.init_serial ) {
         __kmp_serial_initialize();
     };

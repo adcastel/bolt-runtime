@@ -2153,7 +2153,7 @@ typedef struct kmp_teams_size {
 // OpenMP thread data structures
 //
 
-#define MAX_ABT_TASKS 1024
+#define MAX_ABT_TASKS 2048
 
 typedef struct KMP_ALIGN_CACHE kmp_base_info {
 /*

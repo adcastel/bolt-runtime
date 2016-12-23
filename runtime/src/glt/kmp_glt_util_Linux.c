@@ -555,6 +555,7 @@ __kmp_get_xproc( void ) {
 void
 __kmp_runtime_initialize( void )
 {
+    //printf("__kmp_runtime_initialize\n");
     int status;
 
     if (__kmp_global.init_runtime) return;
@@ -593,7 +594,7 @@ __kmp_runtime_initialize( void )
     /* use TLS functions to store gtid */
     //__kmp_global.gtid_mode = 2;
     
-    char *env;
+  /*  char *env;
     char buff[10];
 
     int nthreads;
@@ -625,7 +626,7 @@ __kmp_runtime_initialize( void )
     setenv("GLT_NUM_THREADS", buff, 1);
     
     glt_init(0,NULL);
-    
+    */
     __kmp_abt_initialize();
 
     // FIXME: Do we need a thread-specific key?
@@ -749,6 +750,7 @@ static void __kmp_execute_task(void *arg)
 
     KA_TRACE(20, ("__kmp_execute_task: T#%d after executing task %p.\n",
                   /*__kmp_gtid_from_thread(th)*/gtid, task));
+    return;
 }
 unsigned long int dispatch=0;
 int __kmp_create_task(kmp_info_t *th, kmp_task_t *task)
@@ -774,8 +776,8 @@ int __kmp_create_task(kmp_info_t *th, kmp_task_t *task)
         //glt_timer_start(timer);
         size_t new_max_size;
         if (td->td_tq_max_size == 0) {
-            /* Empty queue. We allocate 32 slots by default. */
-            new_max_size = 64;
+            /* Empty queue. We allocate 1024 slots by default. */
+            new_max_size = 1024;
         } else {
             /* The task queue is full. Expand it if possible. */
             new_max_size = td->td_tq_max_size * 2;
@@ -819,8 +821,13 @@ void __kmp_wait_child_tasks(kmp_info_t *th, int yield)
     //printf ("__kmp_wait_child_tasks: T#%d waiting for %d tasks\n", __kmp_gtid_from_thread(th),taskdata->td_tq_cur_size);
 
     if (taskdata->td_tq_cur_size == 0) {
+        // Solucion de rafa para MTH mientras que los chinos no arreglen el tema del dispatch
+        //if((__kmp_gtid_from_thread(th)==0) && (th->th.th_team->t.t_level > 1)) {
+        //printf("gtid vale %d y el level %d\n",__kmp_gtid_from_thread(th),th->th.th_team->t.t_level);
+        //    return;
+        //}
         /* leaf task case */
-        //if (yield) {
+        if (yield) {
             //__kmp_release_info(th);
 
             //ABT_thread_yield();
@@ -831,7 +838,7 @@ void __kmp_wait_child_tasks(kmp_info_t *th, int yield)
          //   } else {
          //       __kmp_bind_task_to_thread(th->th.th_team, taskdata);
          //   }
-        //}
+        }
         return;
     }
 
@@ -900,7 +907,7 @@ kmp_info_t *__kmp_bind_task_to_thread(kmp_team_t *team, kmp_taskdata_t *taskdata
             th = team->t.t_threads[idx];
             /*ABT_thread*/GLT_ult ult = th->th.th_info.ds.ds_thread;
 
-            if (th->th.th_active == FALSE && ult != NULL) {
+            if (th->th.th_active == FALSE && ult != GLT_UNIT_NULL) {
                 /* Try to take the ownership of kmp_info 'th' */
                 if (KMP_COMPARE_AND_STORE_RET32(&th->th.th_active, FALSE, TRUE) == FALSE) {
                     /* Bind this task as if it is executed by 'th'. */
@@ -936,7 +943,7 @@ __kmp_launch_worker( void *thr )
 
     gtid = this_thr->th.th_info.ds.ds_gtid;
     KMP_DEBUG_ASSERT( this_thr == __kmp_global.threads[ gtid ] );
-
+    //[QTH]printf("T#%d Launch_worker init 1\n",gtid);
 ///#if KMP_AFFINITY_SUPPORTED
 ///    __kmp_affinity_set_init_mask( gtid, FALSE );
 ///#endif
@@ -954,20 +961,28 @@ __kmp_launch_worker( void *thr )
     KMP_MB();
 
     pteam = (kmp_team_t *(*))(& this_thr->th.th_team);
+        //[QTH]printf("T#%d Launch_worker 2 %p\n",gtid,(*pteam)->t.t_pkfn);
+
     if ( TCR_SYNC_PTR(*pteam) && !TCR_4(__kmp_global.g.g_done) ) {
         /* run our new task */
         if ( TCR_SYNC_PTR((*pteam)->t.t_pkfn) != NULL ) {
             int rc;
-            KA_TRACE(20, ("__kmp_launch_worker: T#%d(%d:%d) invoke microtask = %p\n",
-                          gtid, (*pteam)->t.t_id, __kmp_tid_from_gtid(gtid), (*pteam)->t.t_pkfn));
+            //KA_TRACE(20, ("__kmp_launch_worker: T#%d(%d:%d) invoke microtask = %p\n",
+              //            gtid, (*pteam)->t.t_id, __kmp_tid_from_gtid(gtid), (*pteam)->t.t_pkfn));
+                //[QTH]printf("T#%d Launch_worker 21\n",gtid);
 
             //updateHWFPControl (*pteam);
-
+            //[QTH]printf("%d antes de ejecutar\n",gtid);
             KMP_STOP_DEVELOPER_EXPLICIT_TIMER(USER_launch_thread_loop);
             {
                 KMP_TIME_DEVELOPER_BLOCK(USER_worker_invoke);
+                            //[QTH]printf("%d antes antes de ejecutar\n",gtid);
+
                 rc = (*pteam)->t.t_invoke( gtid );
             }
+            //[QTH]printf("%d despues de ejecutar\n",gtid);
+    //[QTH]printf("T#%d Launch_worker 22\n",gtid);
+
             KMP_START_DEVELOPER_EXPLICIT_TIMER(USER_launch_thread_loop);
             KMP_ASSERT( rc );
 
@@ -982,6 +997,7 @@ __kmp_launch_worker( void *thr )
     //__kmp_common_destroy_gtid( gtid );
 
     KA_TRACE( 10, ("__kmp_launch_worker: T#%d done\n", gtid) );
+    //printf("T#%d Launch_worker 3\n",gtid);
 
     /* [AC]*/
     __kmp_wait_child_tasks(this_thr, FALSE);
@@ -994,6 +1010,7 @@ __kmp_launch_worker( void *thr )
         td->td_task_queue = NULL;
         td->td_tq_max_size = 0;
     }
+    //return;
 }
 
 #ifdef KMP_GLT_USE_TASKLET_TEAM
@@ -1128,10 +1145,11 @@ __kmp_create_worker( int gtid, kmp_info_t *th, size_t stack_size )
     KMP_MB();       /* Flush all pending memory write invalidates.  */
 
     //status = ABT_thread_create( tar_pool, __kmp_launch_worker, (void *)th, thread_attr, &handle );
-    /*status = */glt_ult_create_to( __kmp_launch_worker, (void *)th, &handle, dest);
+    /*status = */glt_ult_create_to( __kmp_launch_worker, (void *)th, &th->th.th_info.ds.ds_thread, dest);
     //KMP_ASSERT( status == ABT_SUCCESS );
 
-    th->th.th_info.ds.ds_thread = handle;
+    //th->th.th_info.ds.ds_thread = handle;
+        //printf("*******************crear thread = %i\n",handle);
 
     //status = ABT_thread_attr_free( & thread_attr );
     //KMP_ASSERT( status == ABT_SUCCESS );
@@ -1256,8 +1274,11 @@ __kmp_join_worker( kmp_info_t *th )
         status = ABT_thread_join(ds_thread);
         KMP_ASSERT( status == ABT_SUCCESS );
          */
-        GLT_ult ds_thread = th->th.th_info.ds.ds_thread;
-        glt_ult_join(&ds_thread);
+        //GLT_ult ds_thread = th->th.th_info.ds.ds_thread;
+        //printf("*******************join thread = %i\n",ds_thread);
+        glt_ult_join(&th->th.th_info.ds.ds_thread);
+        KA_TRACE( 10, ("__kmp_join_worker: almost done joining worker T#%d\n", th->th.th_info.ds.ds_gtid) );
+
 #ifndef KMP_GLT_USE_TASKLET_TEAM
     }
 #endif
@@ -1405,12 +1426,12 @@ __kmp_end_split_barrier( int gtid )
 void
 __kmp_init_nest_lock( kmp_lock_t *lck )
 {
-    ABT_mutex_attr mattr;
+    /*ABT_mutex_attr mattr;
 
     ABT_mutex_attr_create( &mattr );
     ABT_mutex_attr_set_recursive( mattr, ABT_TRUE );
     ABT_mutex_create_with_attr( mattr, lck );
-    ABT_mutex_attr_free( &mattr );
+    ABT_mutex_attr_free( &mattr );*/
 }
 
 #ifdef KMP_GLT_USE_TASKLET_TEAM
@@ -2327,7 +2348,7 @@ __kmp_invoke_microtask( microtask_t pkfn,
                         int argc, void *p_argv[] 
 ) 
 {
-
+    printf("__kmp_invoke_microtask with %d arguments\n", argc);
   switch (argc) {
   default:
     fprintf(stderr, "Too many args to microtask: %d!\n", argc);
