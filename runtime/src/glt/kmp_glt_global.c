@@ -101,9 +101,7 @@ __kmp_global_initialize(void)
     sprintf(buff, "%d", nthreads);
     setenv("GLTO_NUM_THREADS", buff, 1);
     
-   printf("voy al init\n"); 
     glt_init(0,NULL);
-   printf("vuelvo del init\n"); 
     __kmp_global.g = { 0 };
 
     /* --------------------------------------------------------------------------- */

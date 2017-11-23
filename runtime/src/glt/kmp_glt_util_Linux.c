@@ -757,7 +757,7 @@ int __kmp_create_task(kmp_info_t *th, kmp_task_t *task)
 {
     int status;
     int gtid = __kmp_gtid_from_thread(th);
-    int dest;
+    /*int dest;
     if(th->th.th_single_or_master == 1){ //we are in a single region so we may balance the tasks
         dest = dispatch%glt_get_num_threads();
         dispatch++;
@@ -765,11 +765,12 @@ int __kmp_create_task(kmp_info_t *th, kmp_task_t *task)
     }
     else
         dest = glt_get_thread_num();//__kmp_abt_get_my_pool(gtid);
-   /* GLT_timer timer;
+   */
+    /* GLT_timer timer;
     glt_timer_create(&timer);    */
-    KA_TRACE(20, ("__kmp_create_task: T#%d before creating task %p into the queue %d.\n",
+    /*KA_TRACE(20, ("__kmp_create_task: T#%d before creating task %p into the queue %d.\n",
                   gtid, task, dest));
-
+*/
     /* Check if the task queue has an empty slot */
     kmp_taskdata_t *td = th->th.th_current_task;
     if (td->td_tq_cur_size == td->td_tq_max_size) {
@@ -800,12 +801,14 @@ int __kmp_create_task(kmp_info_t *th, kmp_task_t *task)
     /*status = ABT_thread_create(dest, __kmp_execute_task, (void *)task,
                                ABT_THREAD_ATTR_NULL,
                                &td->td_task_queue[td->td_tq_cur_size++]);*/
-    glt_ult_create_to(__kmp_execute_task, (void *)task,
-                               &td->td_task_queue[td->td_tq_cur_size++],dest);
+    //glt_ult_create_to(__kmp_execute_task, (void *)task,
+    //                           &td->td_task_queue[td->td_tq_cur_size++],dest);
+    glt_ult_create(__kmp_execute_task, (void *)task,
+                               &td->td_task_queue[td->td_tq_cur_size++]);
     //KMP_ASSERT(status == GLT_SUCCESS);
 
-    KA_TRACE(20, ("__kmp_create_task: T#%d after creating task %p into the pool %d.\n",
-                  gtid, task, dest));
+    /*KA_TRACE(20, ("__kmp_create_task: T#%d after creating task %p into the pool %d.\n",
+                  gtid, task, dest));*/
     // printf("__kmp_create_task: T#%d after creating task %p into the pool %d.\n",
     //              gtid, task, dest);
     return TRUE;
