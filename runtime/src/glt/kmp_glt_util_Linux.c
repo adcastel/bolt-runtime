@@ -1135,9 +1135,13 @@ __kmp_create_worker( int gtid, kmp_info_t *th, size_t stack_size )
     //ABT_pool tar_pool;
     int dest;
     if (th->th.th_team->t.t_level > 1) {
-        dest = glt_get_thread_num();//__kmp_abt_get_pool(gtid);
+       // dest = glt_get_thread_num();//__kmp_abt_get_pool(gtid);
+    //   printf("NESTED!\n");
+       glt_ult_create( __kmp_launch_worker, (void *)th, &th->th.th_info.ds.ds_thread);
     } else {
+      //  printf("normal\n");
         dest = gtid;//dest % glt_get_num_threads();
+        glt_ult_create_to( __kmp_launch_worker, (void *)th, &th->th.th_info.ds.ds_thread, dest);
     }
     KA_TRACE( 10, ("__kmp_create_worker: T#%d, nesting level=%d, target dest=%d\n",
                    gtid, th->th.th_team->t.t_level, dest) );
@@ -1145,7 +1149,7 @@ __kmp_create_worker( int gtid, kmp_info_t *th, size_t stack_size )
     KMP_MB();       /* Flush all pending memory write invalidates.  */
 
     //status = ABT_thread_create( tar_pool, __kmp_launch_worker, (void *)th, thread_attr, &handle );
-    /*status = */glt_ult_create_to( __kmp_launch_worker, (void *)th, &th->th.th_info.ds.ds_thread, dest);
+    /*status = *///glt_ult_create_to( __kmp_launch_worker, (void *)th, &th->th.th_info.ds.ds_thread, dest);
     //KMP_ASSERT( status == ABT_SUCCESS );
 
     //th->th.th_info.ds.ds_thread = handle;

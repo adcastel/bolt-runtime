@@ -99,10 +99,11 @@ __kmp_global_initialize(void)
     KA_TRACE( 1000, ("__kmp_global_initialize: # of GLT_threads = %d\n", nthreads ) );
 
     sprintf(buff, "%d", nthreads);
-    setenv("GLT_NUM_THREADS", buff, 1);
+    setenv("GLTO_NUM_THREADS", buff, 1);
     
+   printf("voy al init\n"); 
     glt_init(0,NULL);
-    
+   printf("vuelvo del init\n"); 
     __kmp_global.g = { 0 };
 
     /* --------------------------------------------------------------------------- */
