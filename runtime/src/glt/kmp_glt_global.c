@@ -100,6 +100,7 @@ __kmp_global_initialize(void)
 
     sprintf(buff, "%d", nthreads);
     setenv("GLTO_NUM_THREADS", buff, 1);
+    //setenv("GLT_NUM_THREADS", buff, 1);
     
     glt_init(0,NULL);
     __kmp_global.g = { 0 };

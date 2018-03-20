@@ -357,6 +357,7 @@ __kmp_release_deps ( kmp_int32 gtid, kmp_taskdata_t *task )
     }
 
     if ( !node ) return;
+  	thread->th.th_team->t.th_num_tasks_with_deps--; //[AC] taskdependencies v1.0
 
     KA_TRACE(20, ("__kmp_realease_deps: T#%d notifying succesors of task %p.\n", gtid, task ) );
     
@@ -411,11 +412,10 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
                             kmp_int32 ndeps, kmp_depend_info_t *dep_list,
                             kmp_int32 ndeps_noalias, kmp_depend_info_t *noalias_dep_list )
 {
-
+//printf("OMP task_with_deps\n");
     kmp_taskdata_t * new_taskdata = KMP_TASK_TO_TASKDATA(new_task);
     KA_TRACE(10, ("__kmpc_omp_task_with_deps(enter): T#%d loc=%p task=%p\n",
                   gtid, loc_ref, new_taskdata ) );
-
     kmp_info_t *thread = __kmp_global.threads[ gtid ];
     kmp_taskdata_t * current_task = thread->th.th_current_task;
 
@@ -434,22 +434,28 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
 #else
         kmp_depnode_t *node = (kmp_depnode_t *) __kmp_thread_malloc(thread,sizeof(kmp_depnode_t));
 #endif
-
+  	thread->th.th_team->t.th_num_tasks_with_deps++; //[AC] taskdependencies v1.0
+//printf("tenemos %d tareas con dependencias\n",thread->th.th_team->t.th_num_tasks_with_deps);
         __kmp_init_node(node);
         new_taskdata->td_depnode = node;
+//printf("OMP task_with_deps voy a check deps\n");
 
         if ( __kmp_check_deps( gtid, node, new_task, current_task->td_dephash, NO_DEP_BARRIER,
                                ndeps, dep_list, ndeps_noalias,noalias_dep_list ) ) {
             KA_TRACE(10, ("__kmpc_omp_task_with_deps(exit): T#%d task had blocking dependencies: "
                   "loc=%p task=%p, return: TASK_CURRENT_NOT_QUEUED\n", gtid, loc_ref,
                   new_taskdata ) );
+    		printf("TASK_CURRENT_NOT_QUEUED\n");
             return TASK_CURRENT_NOT_QUEUED;
         }
     } else {
 #if OMP_41_ENABLED
         kmp_task_team_t * task_team = thread->th.th_task_team;
-        if ( task_team && task_team->tt.tt_found_proxy_tasks )
+        if ( task_team && task_team->tt.tt_found_proxy_tasks ){
+//	printf("OMP task_with_deps voy a wait deps\n");
+
            __kmpc_omp_wait_deps ( loc_ref, gtid, ndeps, dep_list, ndeps_noalias, noalias_dep_list );
+	}
         else
 #endif
            KA_TRACE(10, ("__kmpc_omp_task_with_deps(exit): T#%d ignored dependencies for task (serialized)"
@@ -459,6 +465,7 @@ __kmpc_omp_task_with_deps( ident_t *loc_ref, kmp_int32 gtid, kmp_task_t * new_ta
     KA_TRACE(10, ("__kmpc_omp_task_with_deps(exit): T#%d task had no blocking dependencies : "
                   "loc=%p task=%p, transferring to __kmpc_omp_task\n", gtid, loc_ref,
                   new_taskdata ) );
+    printf("dependencia arreglada y voy a crear la tarea\n");
     return __kmpc_omp_task(loc_ref,gtid,new_task);
 }
 
@@ -486,7 +493,7 @@ __kmpc_omp_wait_deps ( ident_t *loc_ref, kmp_int32 gtid, kmp_int32 ndeps, kmp_de
 
     kmp_info_t *thread = __kmp_global.threads[ gtid ];
     kmp_taskdata_t * current_task = thread->th.th_current_task;
-
+    //printf("En __kmp_create_task\n");
     // We can return immediately as:
     //   - dependences are not computed in serial teams (except if we have proxy tasks)
     //   - if the dephash is not yet created it means we have nothing to wait for

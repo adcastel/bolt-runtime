@@ -694,7 +694,9 @@ void __kmp_abt_free_task(kmp_info_t *th, kmp_taskdata_t *taskdata)
     //KMP_DEBUG_ASSERT( taskdata->td_flags.freed == 0 );
     //KMP_DEBUG_ASSERT( TCR_4(taskdata->td_allocated_child_tasks) == 0  || taskdata->td_flags.task_serial == 1);
     //KMP_DEBUG_ASSERT( TCR_4(taskdata->td_incomplete_child_tasks) == 0 );
-
+    //
+    //
+    //__kmp_wait_child_tasks(th, 1); //[AC] para el dependency 2.0
     taskdata->td_flags.freed = 1;
 
     /* Free the task queue if it was allocated. */
@@ -803,8 +805,11 @@ int __kmp_create_task(kmp_info_t *th, kmp_task_t *task)
                                &td->td_task_queue[td->td_tq_cur_size++]);*/
     //glt_ult_create_to(__kmp_execute_task, (void *)task,
     //                           &td->td_task_queue[td->td_tq_cur_size++],dest);
+//    printf("En openmp creo con GLT\n");
     glt_ult_create(__kmp_execute_task, (void *)task,
                                &td->td_task_queue[td->td_tq_cur_size++]);
+  	//th->th.th_team->t.th_num_tasks_with_deps--; //[AC] task dependencies v1.0
+//printf("Nos quedan %d tareas con dependencias\n",th->th.th_team->t.th_num_tasks_with_deps);
     //KMP_ASSERT(status == GLT_SUCCESS);
 
     /*KA_TRACE(20, ("__kmp_create_task: T#%d after creating task %p into the pool %d.\n",
@@ -822,6 +827,8 @@ void __kmp_wait_child_tasks(kmp_info_t *th, int yield)
     kmp_taskdata_t *taskdata = th->th.th_current_task;
     KA_TRACE(20, ("__kmp_wait_child_tasks: T#%d waiting for %d tasks\n", __kmp_gtid_from_thread(th),taskdata->td_tq_cur_size));
     //printf ("__kmp_wait_child_tasks: T#%d waiting for %d tasks\n", __kmp_gtid_from_thread(th),taskdata->td_tq_cur_size);
+    //printf("Thread %d Inicio el wait con taskdata->td_tq_cur_size=%d\n", __kmp_gtid_from_thread(th),taskdata->td_tq_cur_size);
+    
 
     if (taskdata->td_tq_cur_size == 0) {
         // Solucion de rafa para MTH mientras que los chinos no arreglen el tema del dispatch
@@ -844,7 +851,6 @@ void __kmp_wait_child_tasks(kmp_info_t *th, int yield)
         }
         return;
     }
-
     /* Let others, e.g., tasks, can use this kmp_info */
     //__kmp_release_info(th);
 
@@ -854,14 +860,19 @@ void __kmp_wait_child_tasks(kmp_info_t *th, int yield)
 
     /* Wait until all child tasks are complete. */
 
-    
     for (i = 0; i < taskdata->td_tq_cur_size; i++) {
         glt_ult_join(&taskdata->td_task_queue[i]);
         //status = ABT_thread_free(&taskdata->td_task_queue[i]);
         //KMP_ASSERT(status == ABT_SUCCESS);
+        //taskdata->td_tq_cur_size--;
     }
     taskdata->td_tq_cur_size = 0;
-        
+       
+
+    while( th->th.th_team->t.th_num_tasks_with_deps>0){ //[AC] task dependencies v1.0
+//	printf("aun no se han creado todas. Faltan %d\n",th->th.th_team->t.th_num_tasks_with_deps);
+	glt_yield();
+    }
     if (taskdata->td_flags.tiedness) {
         /* Obtain kmp_info to continue the original task. */
         //__kmp_acquire_info_for_task(th, taskdata);
@@ -1003,16 +1014,17 @@ __kmp_launch_worker( void *thr )
     //printf("T#%d Launch_worker 3\n",gtid);
 
     /* [AC]*/
-    __kmp_wait_child_tasks(this_thr, FALSE);
+//	printf("Thread %d: llamo al wait desde launch worker con parametro a FALSE\n",gtid);
+    __kmp_wait_child_tasks(this_thr,TRUE);//FALSE);
 
     /* Below is for the implicit task */
-    kmp_taskdata_t *td = this_thr->th.th_current_task;
+    /*kmp_taskdata_t *td = this_thr->th.th_current_task;
     if (td->td_task_queue) {
         KMP_DEBUG_ASSERT(td->td_tq_cur_size == 0);
         KMP_INTERNAL_FREE(td->td_task_queue);
         td->td_task_queue = NULL;
         td->td_tq_max_size = 0;
-    }
+    }*/
     //return;
 }
 
@@ -1138,7 +1150,7 @@ __kmp_create_worker( int gtid, kmp_info_t *th, size_t stack_size )
     //ABT_pool tar_pool;
     int dest;
     if (th->th.th_team->t.t_level > 1) {
-       // dest = glt_get_thread_num();//__kmp_abt_get_pool(gtid);
+        //dest = glt_get_thread_num();//__kmp_abt_get_pool(gtid);
     //   printf("NESTED!\n");
        glt_ult_create( __kmp_launch_worker, (void *)th, &th->th.th_info.ds.ds_thread);
     } else {
@@ -1348,7 +1360,8 @@ __kmp_barrier( int gtid )
                   gtid, __kmp_team_from_gtid(gtid)->t.t_id, __kmp_tid_from_gtid(gtid)));
 
     /* Complete and free all child tasks */
-    __kmp_wait_child_tasks(this_thr, FALSE);
+//	printf("Thread %d: llamo al wait desde barrier con parametro a FALSE\n",tid);
+    __kmp_wait_child_tasks(this_thr, TRUE);//FALSE);
 
     if (!team->t.t_serialized) {
         KMP_MB();

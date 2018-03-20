@@ -2385,6 +2385,7 @@ typedef struct KMP_ALIGN_CACHE kmp_base_team {
     kmp_taskq_t              t_taskq;          // this team's task queue
     void                    *t_copypriv_data;  // team specific pointer to copyprivate data array
     kmp_uint32               t_copyin_counter;
+    int                  th_num_tasks_with_deps = 0;  //[AC: added for task dependencies]
 } kmp_base_team_t;
 
 union KMP_ALIGN_CACHE kmp_team {
