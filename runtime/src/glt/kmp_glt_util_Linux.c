@@ -869,10 +869,10 @@ void __kmp_wait_child_tasks(kmp_info_t *th, int yield)
     taskdata->td_tq_cur_size = 0;
        
 
-    while( th->th.th_team->t.th_num_tasks_with_deps>0){ //[AC] task dependencies v1.0
+//    while( th->th.th_team->t.th_num_tasks_with_deps>0){ //[AC] task dependencies v1.0
 //	printf("aun no se han creado todas. Faltan %d\n",th->th.th_team->t.th_num_tasks_with_deps);
-	glt_yield();
-    }
+//	glt_yield();
+//    }
     if (taskdata->td_flags.tiedness) {
         /* Obtain kmp_info to continue the original task. */
         //__kmp_acquire_info_for_task(th, taskdata);
@@ -1155,7 +1155,9 @@ __kmp_create_worker( int gtid, kmp_info_t *th, size_t stack_size )
        glt_ult_create( __kmp_launch_worker, (void *)th, &th->th.th_info.ds.ds_thread);
     } else {
       //  printf("normal\n");
-        dest = gtid;//dest % glt_get_num_threads();
+        //dest =  //gtid;//dest % glt_get_num_threads();
+         tid = th->th.th_info.ds.ds_tid;
+        dest = tid;
         glt_ult_create_to( __kmp_launch_worker, (void *)th, &th->th.th_info.ds.ds_thread, dest);
     }
     KA_TRACE( 10, ("__kmp_create_worker: T#%d, nesting level=%d, target dest=%d\n",

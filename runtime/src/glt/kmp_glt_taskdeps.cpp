@@ -387,7 +387,8 @@ __kmp_release_deps ( kmp_int32 gtid, kmp_taskdata_t *task )
         __kmp_thread_free(thread,p);
 #endif
     }
-
+    
+    __kmp_wait_child_tasks(thread,FALSE);
     __kmp_node_deref(thread,node);
 
     KA_TRACE(20, ("__kmp_realease_deps: T#%d all successors of %p notified of completation\n", gtid, task ) );
